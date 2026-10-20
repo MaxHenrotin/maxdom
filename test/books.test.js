@@ -86,6 +86,12 @@ describe('books API', () => {
     ]);
   });
 
+  it('shows one circle per volume even when two editions were stored', async () => {
+    await db.prepare("INSERT INTO books (id, series, volume, published) VALUES ('nains-t01-edition-nb', 'Nains', 1, '2019-12-01')").run();
+    const books = await get('/api/books');
+    expect(books.filter((b) => b.series === 'Nains' && b.volume === 1).map((b) => b.id)).toEqual(['n1']);
+  });
+
   it('ticks and unticks, but never a volume that is not out yet', async () => {
     await post('/api/books/read', { bookIds: ['n1', 'm1'], read: true });
     expect(await readIds()).toEqual(['e9', 'n1']);

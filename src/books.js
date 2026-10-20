@@ -51,13 +51,14 @@ export async function refreshBooks(env) {
   return { saved: books.length };
 }
 
-// A volume is out once its publication date is reached.
+// A volume is out once its publication date is reached. Deduplicating again here hides a
+// second edition that a partial scrape may have stored, since volumes are never deleted.
 export async function listBooks(db, now) {
   const { results } = await db
     .prepare('SELECT b.*, r.read_at FROM books b LEFT JOIN books_read r ON r.book_id = b.id')
     .all();
   const today = now.slice(0, 10);
-  return Response.json(sortBooks(results).map((book) => ({ ...book, released: book.published <= today })));
+  return Response.json(sortBooks(dedupeEditions(results)).map((book) => ({ ...book, released: book.published <= today })));
 }
 
 // Only volumes that are out can be ticked, whatever the client sends.
