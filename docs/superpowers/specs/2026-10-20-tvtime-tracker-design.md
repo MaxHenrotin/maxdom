@@ -53,12 +53,12 @@ Anti-goals (it would be a failure even if it technically worked):
 Three tables:
 
 - `shows`: TVmaze show id (primary key), name, TVmaze status (`Running`, `Ended`, `To Be Determined`, `In Development`), poster URL, premiere year, `stopped` (0/1), `added_at`, `tvmaze_updated` (the show's TVmaze `updated` timestamp at the last fetch).
-- `episodes`: TVmaze episode id (primary key), show id, season, number, name, air date (nullable), runtime.
+- `episodes`: TVmaze episode id (primary key), show id, season, number, name, air time (`airstamp`, UTC, nullable), runtime.
 - `watched`: episode id (primary key), `watched_at`.
 
 Only regular episodes are stored. TVmaze leaves specials out of its episode list by default, and that's fine.
 
-An episode is "aired" if it has an air date on or before today. Today's date is computed in the Worker. The category of each show is computed on read, never stored, following the rules in "What it does".
+An episode is "aired" once its air time has passed. The Worker compares it with its own clock, so an episode becomes tickable at the hour it airs and not at the next UTC midnight. The category of each show is computed on read, never stored, following the rules in "What it does".
 
 ## TV Time import
 

@@ -10,9 +10,9 @@ const show = {
   updated: 1782836072,
   _embedded: {
     episodes: [
-      { id: 1, season: 1, number: 1, name: 'Good News About Hell', airdate: '2022-02-18', runtime: 57 },
-      { id: 2, season: 1, number: null, name: 'Special', airdate: '2022-03-01', runtime: 20 },
-      { id: 3, season: 2, number: 1, name: 'Hello, Ms. Cobel', airdate: '', runtime: null },
+      { id: 1, season: 1, number: 1, name: 'Good News About Hell', airstamp: '2022-02-18T07:00:00+00:00', runtime: 57 },
+      { id: 2, season: 1, number: null, name: 'Special', airstamp: '2022-03-01T07:00:00+00:00', runtime: 20 },
+      { id: 3, season: 2, number: 1, name: 'Hello, Ms. Cobel', airstamp: null, runtime: null },
     ],
   },
 };
@@ -37,10 +37,10 @@ describe('toShowRow', () => {
 });
 
 describe('toEpisodeRows', () => {
-  it('drops specials and turns an empty airdate into null', () => {
+  it('drops specials and writes airstamp in toISOString() form', () => {
     expect(toEpisodeRows(show)).toEqual([
-      { id: 1, show_id: 54198, season: 1, number: 1, name: 'Good News About Hell', airdate: '2022-02-18', runtime: 57 },
-      { id: 3, show_id: 54198, season: 2, number: 1, name: 'Hello, Ms. Cobel', airdate: null, runtime: null },
+      { id: 1, show_id: 54198, season: 1, number: 1, name: 'Good News About Hell', airstamp: '2022-02-18T07:00:00.000Z', runtime: 57 },
+      { id: 3, show_id: 54198, season: 2, number: 1, name: 'Hello, Ms. Cobel', airstamp: null, runtime: null },
     ]);
   });
 });

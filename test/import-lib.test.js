@@ -90,7 +90,7 @@ describe('mergeByTvmaze', () => {
 
 describe('matchEpisodes', () => {
   it('matches on season and number and reports the rest', () => {
-    const episodes = [{ id: 42, show_id: 7, season: 1, number: 1, name: 'Pilot', airdate: '2005-08-29', runtime: 60 }];
+    const episodes = [{ id: 42, show_id: 7, season: 1, number: 1, name: 'Pilot', airstamp: '2005-08-29', runtime: 60 }];
     const watches = [
       { season: 1, number: 1, watchedAt: '2019-03-01 00:00:00' },
       { season: 9, number: 9, watchedAt: '2019-03-02 00:00:00' },
@@ -105,7 +105,7 @@ describe('matchEpisodes', () => {
 describe('seedSql', () => {
   const sql = seedSql([{
     show: { id: 1, name: "Inside Bill's Brain", status: 'Ended', image_url: null, premiered_year: 2019, tvmaze_updated: 100 },
-    episodes: [{ id: 2, show_id: 1, season: 1, number: 1, name: 'Part One', airdate: null, runtime: 60 }],
+    episodes: [{ id: 2, show_id: 1, season: 1, number: 1, name: 'Part One', airstamp: null, runtime: 60 }],
     stopped: true,
     addedAt: '2020-01-01 00:00:00',
     watched: [{ episodeId: 2, watchedAt: '2020-01-02 00:00:00' }],

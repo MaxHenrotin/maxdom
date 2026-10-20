@@ -26,6 +26,7 @@ export function toShowRow(json) {
 }
 
 // Specials have a null number; the app only tracks regular episodes.
+// airstamp is rewritten with toISOString() so it compares as text with the Worker's clock.
 export function toEpisodeRows(json) {
   return json._embedded.episodes
     .filter((ep) => ep.number !== null)
@@ -35,7 +36,7 @@ export function toEpisodeRows(json) {
       season: ep.season,
       number: ep.number,
       name: ep.name,
-      airdate: ep.airdate || null,
+      airstamp: ep.airstamp ? new Date(ep.airstamp).toISOString() : null,
       runtime: ep.runtime,
     }));
 }
