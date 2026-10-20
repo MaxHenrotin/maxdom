@@ -94,7 +94,7 @@ h1 { margin: 0; font-size: 22px; }
 
 .tab-count { display: flex; align-items: center; gap: 4px; font-size: 18px; font-weight: 600; }
 
-.icon { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
 .icon .filled { fill: currentColor; stroke: none; }
 
