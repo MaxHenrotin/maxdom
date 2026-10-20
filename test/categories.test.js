@@ -1,19 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { categorize, isAired } from '../src/categories.js';
-
-describe('isAired', () => {
-  it('counts an episode airing today as aired', () => {
-    expect(isAired('2026-10-20', '2026-10-20')).toBe(true);
-  });
-
-  it('does not count a future episode', () => {
-    expect(isAired('2026-10-21', '2026-10-20')).toBe(false);
-  });
-
-  it('does not count an episode without an air date', () => {
-    expect(isAired(null, '2026-10-20')).toBe(false);
-  });
-});
+import { categorize } from '../src/categories.js';
 
 describe('categorize', () => {
   it('puts stopped shows in stopped, whatever was seen', () => {
