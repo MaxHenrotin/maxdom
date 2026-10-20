@@ -47,7 +47,7 @@ curl "localhost:8787/cdn-cgi/local/scheduled?cron=0+6+*+*+1"
 
 ## The TV Time import
 
-The list was created once from my TV Time GDPR export by a script that has since been deleted (it's in the git history, under `scripts/`). Its output, `data/seed.sql`, predates my manual corrections and starts by deleting every row, so it must never be loaded again.
+The list was created once from my TV Time GDPR export by a script that has since been deleted, along with the export and the generated seed (the script is in the git history, under `scripts/`). The local database, with the corrections I made by hand afterwards, is the only reference.
 
 ## Going online later
 
