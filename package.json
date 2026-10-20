@@ -1,0 +1,15 @@
+{
+  "name": "tvtime",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "test": "vitest run",
+    "db:migrate": "wrangler d1 migrations apply tvtime --local"
+  },
+  "devDependencies": {
+    "csv-parse": "^7.0.3",
+    "vitest": "^5.0.5",
+    "wrangler": "^4.151.2"
+  }
+}
