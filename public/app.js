@@ -1,9 +1,9 @@
 const CATEGORIES = [
   ['in_progress', 'En cours'],
-  ['watch_later', 'Pas commencées'],
   ['waiting', 'En attente'],
   ['ended', 'Terminées'],
   ['stopped', 'Arrêtées'],
+  ['watch_later', 'Pas commencées'],
 ];
 
 const STATUS = {
