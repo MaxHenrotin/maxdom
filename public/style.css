@@ -370,3 +370,51 @@ summary .button { padding: 4px 12px; font-size: 14px; font-weight: 400; }
 .node.read::before { content: "✓"; color: var(--bg); font-size: 11px; font-weight: 700; }
 
 .node.unreleased { opacity: 0.45; }
+
+.book-row.open { overflow: hidden; transition: height 0.45s ease; }
+
+.book-row.growing { height: 30px; }
+
+.book-row.settled { height: auto; }
+
+.shell {
+  position: absolute;
+  border: 2px solid var(--colour);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  transition: all 0.45s ease;
+}
+
+/* The shell starts and ends as the volume's circle. */
+.growing .shell {
+  top: 5px;
+  left: calc(34px + (var(--col) + 0.5) * (100% - 34px) / 7 - 10px);
+  width: 20px;
+  height: 20px;
+  border-radius: 10px;
+}
+
+.settled .shell { inset: 0 0 8px; border-radius: 14px; }
+
+.book-card { position: relative; margin-bottom: 8px; padding: 14px; transition: opacity 0.2s; }
+
+.hidden .book-card { opacity: 0; }
+
+.book-head { display: flex; gap: 14px; }
+
+.book-head .poster { width: 64px; }
+
+.book-title { font-weight: 600; line-height: 1.25; }
+
+.book-series { color: var(--colour); font-weight: 600; }
+
+.book-head .status { margin: 2px 0 0; }
+
+.book-read { display: flex; align-items: center; font-size: 14px; color: var(--muted); }
+
+.book-card .show-summary { margin: 12px 0 0; }
+
+.book-links { display: flex; justify-content: space-between; }
+
+.book-links .link-button { padding-bottom: 0; font-size: 13px; text-decoration: none; }
+
+.show-summary.loading { min-height: 5.6em; }

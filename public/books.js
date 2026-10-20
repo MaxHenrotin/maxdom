@@ -1,4 +1,4 @@
-import { api, esc, number, sectionSwitch } from './lib.js';
+import { api, esc, frenchDate, localDate, number, sectionSwitch } from './lib.js';
 
 // Column order of the tree. Their colours are --series-0 to --series-6 in style.css.
 const SERIES = [
@@ -26,11 +26,12 @@ function spans(books) {
   return span;
 }
 
+// In an open row the circle sits on the first 30px, so a branch ending there stops at 15px.
 function branches(span, row) {
   return span.map((range, col) => {
     if (!range || row < range[0] || row > range[1]) return '';
     const top = row === range[0] ? '15px' : '0';
-    const bottom = row === range[1] ? '15px' : '0';
+    const bottom = row === range[1] ? 'calc(100% - 15px)' : '0';
     return `<span class="branch" style="${at(col)}; top: ${top}; bottom: ${bottom}"></span>`;
   }).join('');
 }
@@ -41,28 +42,168 @@ function node(book) {
   return `<button class="node ${state}" data-book="${esc(book.id)}" style="${at(series(book))}" aria-label="${esc(label)}"></button>`;
 }
 
-export async function renderBooks(main) {
-  const books = await api('/books');
-  const span = spans(books);
-  const released = books.filter((book) => book.released).length;
-  const read = books.filter((book) => book.read_at).length;
-  let year = null;
-
-  main.innerHTML = `
-    ${sectionSwitch('books')}
-    <div class="header">
-      <h1>Livres</h1>
-      <div class="recap"><strong>${number(read)}</strong> / ${number(released)} lus</div>
-    </div>
-    <div class="tree">
-      <div class="columns">${SERIES.map(({ short }, col) => `<span style="${at(col)}">${short}</span>`).join('')}</div>
-      ${books.map((book, row) => {
-        const bookYear = book.published.slice(0, 4);
-        const label = bookYear === year ? '' : `<span class="year">${bookYear}</span>`;
-        year = bookYear;
-        return `<div class="book-row">${label}${branches(span, row)}${node(book)}</div>`;
-      }).join('')}
+// summary is null while it loads, '' when there is none.
+function card(book, books, summary) {
+  const { short, name } = SERIES[series(book)];
+  const sameSeries = books.filter((other) => other.series === book.series).sort((a, b) => a.volume - b.volume);
+  const index = sameSeries.indexOf(book);
+  const link = (other, text) => (other ? `<button class="link-button" data-go="${esc(other.id)}">${text}</button>` : '<span></span>');
+  return `
+    <div class="book-card">
+      <div class="book-head">
+        ${book.cover_url ? `<img class="poster" src="${esc(book.cover_url)}" alt="">` : '<div class="poster"></div>'}
+        <div>
+          <div class="book-title">${esc(book.title)}</div>
+          <div><span class="book-series">${esc(name)}</span> · Tome ${book.volume}</div>
+          <div class="status">${book.released ? 'Paru' : 'Paraît'} le ${frenchDate(book.published)}</div>
+          <div class="book-read">
+            <button class="check" data-read aria-pressed="${Boolean(book.read_at)}" aria-label="Lu" ${book.released ? '' : 'disabled'}></button>
+            <span>${book.read_at ? `Lu le ${localDate(book.read_at)}` : 'Pas encore lu'}</span>
+          </div>
+        </div>
+      </div>
+      ${summary === null ? '<p class="show-summary loading"></p>' : summary ? `<p class="show-summary">${esc(summary)}</p>` : ''}
+      <div class="book-links">
+        ${link(sameSeries[index - 1], `‹ ${short} ${sameSeries[index - 1]?.volume}`)}
+        ${link(sameSeries[index + 1], `${short} ${sameSeries[index + 1]?.volume} ›`)}
+      </div>
     </div>`;
+}
 
+// The open card grows out of its circle: the shell's box and the row's height run from
+// the circle's size (.growing in style.css) to the card's, then the content fades in.
+// Closing plays it backwards.
+const GROW_MS = 450;
+const FADE_IN_AT_MS = 380;
+const FADE_OUT_MS = 150;
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const nextFrame = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+// Transitions need pixel sizes at both ends; once open, the card sizes itself so the summary can expand.
+function pinToCard(row) {
+  const box = { left: '0px', top: '0px', width: `${row.clientWidth}px`, height: `${row.scrollHeight - 8}px`, borderRadius: '14px' };
+  Object.assign(row.querySelector('.shell').style, box);
+  row.style.height = `${row.scrollHeight}px`;
+}
+
+function unpin(row) {
+  row.querySelector('.shell').removeAttribute('style');
+  row.style.height = '';
+}
+
+export async function renderBooks(main) {
+  let books = await api('/books');
+  const summaries = new Map();
+  let openId = null;
+  let busy = false;
+
+  const openRow = () => main.querySelector('.book-row.open');
+
+  function draw({ growing = false } = {}) {
+    const span = spans(books);
+    const released = books.filter((book) => book.released).length;
+    const read = books.filter((book) => book.read_at).length;
+    let year = null;
+    main.innerHTML = `
+      ${sectionSwitch('books')}
+      <div class="header">
+        <h1>Livres</h1>
+        <div class="recap"><strong>${number(read)}</strong> / ${number(released)} lus</div>
+      </div>
+      <div class="tree">
+        <div class="columns">${SERIES.map(({ short }, col) => `<span style="${at(col)}">${short}</span>`).join('')}</div>
+        ${books.map((book, row) => {
+          const bookYear = book.published.slice(0, 4);
+          const label = bookYear === year ? '' : `<span class="year">${bookYear}</span>`;
+          year = bookYear;
+          if (book.id !== openId) return `<div class="book-row">${label}${branches(span, row)}${node(book)}</div>`;
+          return `
+            <div class="book-row open ${growing ? 'growing hidden' : 'settled'}" data-open="${esc(book.id)}" style="${at(series(book))}">
+              ${label}${branches(span, row)}
+              <div class="shell"></div>
+              ${card(book, books, summaries.get(book.id) ?? null)}
+            </div>`;
+        }).join('')}
+      </div>`;
+  }
+
+  async function grow() {
+    const row = openRow();
+    await nextFrame();
+    pinToCard(row);
+    row.classList.remove('growing');
+    await wait(FADE_IN_AT_MS);
+    row.classList.remove('hidden');
+    await wait(GROW_MS - FADE_IN_AT_MS);
+    unpin(row);
+    row.classList.add('settled');
+  }
+
+  async function shrink() {
+    const row = openRow();
+    if (!row) return;
+    pinToCard(row);
+    row.classList.remove('settled');
+    row.classList.add('hidden');
+    await wait(FADE_OUT_MS);
+    unpin(row);
+    row.classList.add('growing');
+    await wait(GROW_MS);
+    openId = null;
+    draw();
+  }
+
+  // The card opens before its summary arrives: the summary is cut to four lines, so a
+  // four-line placeholder keeps the card's height. A failure just removes the placeholder.
+  async function loadSummary(id) {
+    summaries.set(id, null);
+    const summary = await api(`/books/${id}/summary`).then((data) => data.summary, () => '');
+    summaries.set(id, summary);
+    const slot = main.querySelector(`[data-open="${id}"] .show-summary.loading`);
+    if (slot && summary) {
+      slot.textContent = summary;
+      slot.classList.remove('loading');
+    } else {
+      slot?.remove();
+    }
+  }
+
+  async function open(id) {
+    await shrink();
+    openId = id;
+    draw({ growing: true });
+    if (!summaries.has(id)) loadSummary(id);
+    await grow();
+  }
+
+  async function toggleRead(check) {
+    const book = books.find(({ id }) => id === openId);
+    check.setAttribute('aria-pressed', !book.read_at);
+    try {
+      await api('/books/read', { method: 'POST', body: { bookIds: [book.id], read: !book.read_at } });
+      books = await api('/books');
+    } catch (error) {
+      alert(`Erreur : ${error.message}`);
+    }
+    draw();
+  }
+
+  async function handle(event) {
+    const target = event.target.closest('[data-book], [data-go]');
+    if (target) await open(target.dataset.book ?? target.dataset.go);
+    else if (event.target.closest('[data-read]')) await toggleRead(event.target.closest('[data-read]'));
+    else if (event.target.closest('.show-summary')) event.target.closest('.show-summary').classList.toggle('open');
+    else if (event.target.closest('.book-row.open')) await shrink();
+  }
+
+  // Taps during an animation are dropped, so two cards never move at once.
+  main.onclick = (event) => {
+    if (busy) return;
+    busy = true;
+    handle(event).finally(() => { busy = false; });
+  };
+
+  draw();
   main.querySelector('.node:not(.read):not(.unreleased)')?.scrollIntoView({ block: 'center' });
 }
