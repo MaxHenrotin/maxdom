@@ -19,3 +19,17 @@ describe('GET /api/shows/:id', () => {
     ]);
   });
 });
+
+describe('GET /api/shows', () => {
+  it('sums the runtime of the watched episodes of each show', async () => {
+    const db = createD1();
+    await db.prepare("INSERT INTO shows (id, name, added_at) VALUES (7, 'Show', 'x'), (8, 'Empty', 'x')").run();
+    await db.prepare(`INSERT INTO episodes (id, show_id, season, number, airdate, runtime) VALUES
+      (1, 7, 1, 1, '2020-01-01', 50), (2, 7, 1, 2, '2020-01-08', 45), (3, 7, 1, 3, '2020-01-15', NULL)`).run();
+    await db.prepare("INSERT INTO watched VALUES (1, 'x'), (3, 'x')").run();
+
+    const shows = await (await worker.fetch(new Request('http://localhost/api/shows'), { DB: db })).json();
+
+    expect(shows.map((show) => [show.id, show.minutes])).toEqual([[7, 50], [8, 0]]);
+  });
+});

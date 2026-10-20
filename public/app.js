@@ -53,11 +53,16 @@ async function renderHome(tab) {
   const shows = await api('/shows');
   const inTab = shows
     .filter((show) => show.category === tab)
-    .sort((a, b) => b.seen - a.seen || a.name.localeCompare(b.name, 'fr'));
+    .sort((a, b) => b.minutes - a.minutes || a.name.localeCompare(b.name, 'fr'));
+  const total = (field) => shows.reduce((sum, show) => sum + show[field], 0).toLocaleString('fr-FR');
   main.innerHTML = `
     <div class="header">
       <h1>Séries</h1>
       <a class="button" href="#/add">Ajouter une série</a>
+    </div>
+    <div class="recap">
+      <div><span class="recap-number">${total('minutes')}</span> minutes regardées</div>
+      <div><span class="recap-number">${total('seen')}</span> épisodes vus</div>
     </div>
     <nav class="tabs">
       ${CATEGORIES.map(([key, label]) => `

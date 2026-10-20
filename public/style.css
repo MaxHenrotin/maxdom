@@ -65,6 +65,10 @@ h1 { margin: 0; font-size: 22px; }
   cursor: pointer;
 }
 
+.recap { display: flex; gap: 28px; padding: 4px 0 14px; color: var(--muted); font-size: 13px; }
+
+.recap-number { display: block; color: var(--ink); font-size: 26px; font-weight: 700; line-height: 1.1; }
+
 .tabs {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
