@@ -7,7 +7,7 @@
   --track: #e6efee;
   --stopped: #c62828;
   --ended: #7b3fa0;
-  --in-progress: #ca8a04;
+  --in-progress: #eab308;
   /* Book series, in column order, with the colours Aquillon uses. */
   --series-0: #eab308;
   --series-1: #d97706;
@@ -29,7 +29,7 @@
     --track: #213230;
     --stopped: #ef6b6b;
     --ended: #b98ad6;
-    --in-progress: #eab308;
+    --in-progress: #facc15;
     --series-3: #a78bfa;
     --series-4: #d97a3a;
     --series-5: #ef6b6b;
