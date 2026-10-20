@@ -144,6 +144,62 @@ async function renderShow(id) {
   draw(new Set([toTick(show.episodes)[0]?.season]));
 }
 
+function resultRow(show, inList) {
+  return `
+    <li class="result">
+      ${poster(show.image?.medium)}
+      <div class="show-info">
+        <div class="show-name">${esc(show.name)}</div>
+        <div class="progress-text">${show.premiered?.slice(0, 4) ?? ''}</div>
+      </div>
+      ${inList ? '<span class="in-list">Déjà dans ta liste</span>' : `<button class="button" data-add="${show.id}">Ajouter</button>`}
+    </li>`;
+}
+
+async function renderAdd() {
+  const inList = new Set((await api('/shows')).map((show) => show.id));
+  main.innerHTML = `
+    <div class="header"><h1>Ajouter une série</h1></div>
+    <form class="search">
+      <input type="search" name="q" placeholder="Rechercher une série" autofocus>
+    </form>
+    <ul class="shows results"></ul>`;
+  const results = main.querySelector('.results');
+
+  main.querySelector('form').onsubmit = async (event) => {
+    event.preventDefault();
+    const query = event.target.q.value.trim();
+    if (!query) return;
+    try {
+      const res = await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(query)}`);
+      if (!res.ok) throw new Error(`TVmaze HTTP ${res.status}`);
+      const found = await res.json();
+      results.innerHTML = found.length === 0
+        ? '<p class="empty">Rien ici.</p>'
+        : found.map(({ show }) => resultRow(show, inList.has(show.id))).join('');
+    } catch (error) {
+      results.innerHTML = `<p class="empty">Erreur : ${esc(error.message)}</p>`;
+    }
+  };
+
+  main.onclick = async (event) => {
+    const button = event.target.closest('[data-add]');
+    if (!button) return;
+    button.disabled = true;
+    try {
+      await api('/shows', { method: 'POST', body: { tvmazeId: Number(button.dataset.add) } });
+      location.hash = '#/tab/watch_later';
+    } catch (error) {
+      if (error.status === 409) {
+        button.outerHTML = '<span class="in-list">Déjà dans ta liste</span>';
+      } else {
+        button.disabled = false;
+        alert(`Erreur : ${error.message}`);
+      }
+    }
+  };
+}
+
 async function render() {
   const [, route, param] = location.hash.split('/');
   const known = CATEGORIES.some(([key]) => key === param);
@@ -151,6 +207,7 @@ async function render() {
   window.scrollTo(0, 0);
   try {
     if (route === 'show') await renderShow(Number(param));
+    else if (route === 'add') await renderAdd();
     else await renderHome(route === 'tab' && known ? param : 'in_progress');
   } catch (error) {
     main.innerHTML = `<p class="empty">Erreur : ${esc(error.message)}</p>`;

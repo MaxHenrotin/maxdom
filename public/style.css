@@ -199,3 +199,24 @@ summary .button { padding: 4px 12px; font-size: 14px; font-weight: 400; }
 .episode-text { display: flex; flex-direction: column; min-width: 0; }
 
 .episode-date { color: var(--muted); font-size: 13px; }
+
+.search input {
+  width: 100%;
+  margin: 8px 0 4px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+
+.result {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.in-list { flex: none; color: var(--muted); font-size: 14px; }
