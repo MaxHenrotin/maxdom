@@ -21,6 +21,8 @@ Export the whole database (schema, migration history and data) to a SQL file:
 npx wrangler d1 export tvtime --local --output=data/backup-YYYY-MM-DD.sql
 ```
 
+The "Télécharger ma base" button on the Profil page gives the same kind of file from the browser, which also works once the app is online. It is built by the Worker (`GET /api/export`) and restores the same way.
+
 To restore it into an empty local database, for example on a new machine, run the file as is. Don't run `npm run db:migrate` before: the export already creates the tables.
 
 ```sh

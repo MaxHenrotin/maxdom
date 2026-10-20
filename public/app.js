@@ -286,18 +286,33 @@ async function renderAdd() {
   };
 }
 
+function renderProfile() {
+  main.innerHTML = `
+    ${sectionSwitch('profile')}
+    <section class="profile">
+      <p>Une copie complète de ta base, séries et tomes compris, au format SQL.</p>
+      <a class="button" href="/api/export" download>Télécharger ma base</a>
+    </section>`;
+}
+
+// Each part credits where its data comes from; the profile shows none.
+const FOOTERS = {
+  series: '<a href="https://www.tvmaze.com">Données : TVmaze</a>',
+  books: '<a href="https://www.monde-aquilon.com">Données : Monde d\'Aquilon</a>',
+  profile: '',
+};
+
 async function render() {
   const [, route, param] = location.hash.split('/');
   const category = (route === 'tab' && CATEGORIES.find(({ key }) => key === param)) || CATEGORIES[0];
   main.onclick = null;
-  footer.innerHTML = route === 'books'
-    ? '<a href="https://www.monde-aquilon.com">Données : Monde d\'Aquilon</a>'
-    : '<a href="https://www.tvmaze.com">Données : TVmaze</a>';
+  footer.innerHTML = FOOTERS[route] ?? FOOTERS.series;
   window.scrollTo(0, 0);
   try {
     if (route === 'show') await renderShow(Number(param));
     else if (route === 'add') await renderAdd();
     else if (route === 'books') await renderBooks(main);
+    else if (route === 'profile') renderProfile();
     else await renderHome(category);
   } catch (error) {
     main.innerHTML = `<p class="empty">Erreur : ${esc(error.message)}</p>`;

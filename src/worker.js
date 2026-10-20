@@ -1,6 +1,7 @@
 import { BOOKS_CRON, getSummary, listBooks, refreshBooks, setRead } from './books.js';
 import { categorize } from './categories.js';
 import { upsertShowStatements } from './db.js';
+import { exportDatabase } from './export.js';
 import { error } from './http.js';
 import { refresh } from './refresh.js';
 import { toEpisodeRows, toShowRow, tvmazeGet } from './tvmaze.js';
@@ -118,6 +119,7 @@ export default {
       case 'POST /api/watched': return setWatched(db, now, await body());
       case 'GET /api/books': return listBooks(db, now);
       case 'POST /api/books/read': return setRead(db, now, await body());
+      case 'GET /api/export': return exportDatabase(db, now);
       default: return error(404, 'not found');
     }
   },

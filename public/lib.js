@@ -24,4 +24,5 @@ export const sectionSwitch = (active) => `
   <nav class="switch">
     <a href="#/" ${active === 'series' ? 'aria-current="page"' : ''}>Séries</a>
     <a href="#/books" ${active === 'books' ? 'aria-current="page"' : ''}>Aquilon</a>
+    <a href="#/profile" ${active === 'profile' ? 'aria-current="page"' : ''}>Profil</a>
   </nav>`;
