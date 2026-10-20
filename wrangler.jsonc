@@ -7,5 +7,5 @@
     // database_id is a placeholder until `wrangler d1 create tvtime` at deploy time
     { "binding": "DB", "database_name": "tvtime", "database_id": "local" }
   ],
-  "triggers": { "crons": ["0 5 * * *"] }
+  "triggers": { "crons": ["0 5 * * *", "0 6 * * 1"] }
 }

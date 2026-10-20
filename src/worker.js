@@ -1,3 +1,4 @@
+import { BOOKS_CRON, refreshBooks } from './books.js';
 import { categorize } from './categories.js';
 import { upsertShowStatements } from './db.js';
 import { refresh } from './refresh.js';
@@ -117,6 +118,6 @@ export default {
   },
 
   async scheduled(controller, env, ctx) {
-    ctx.waitUntil(refresh(env));
+    ctx.waitUntil(controller.cron === BOOKS_CRON ? refreshBooks(env) : refresh(env));
   },
 };
