@@ -117,3 +117,85 @@ h1 { margin: 0; font-size: 22px; }
 .bar span { display: block; height: 100%; background: var(--accent); }
 
 .empty { padding: 32px 0; color: var(--muted); }
+
+.show-header { display: flex; gap: 16px; padding: 20px 0 12px; }
+
+.show-header .poster { width: 96px; }
+
+.show-header h1 { font-size: 20px; line-height: 1.25; }
+
+.status { margin: 2px 0 8px; color: var(--muted); font-size: 14px; }
+
+.actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 0 16px; }
+
+.link-button {
+  padding: 8px 0;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+details { border-top: 1px solid var(--line); }
+
+summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+  padding: 8px 0;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+summary::-webkit-details-marker { display: none; }
+
+summary > span::before { content: "▸"; display: inline-block; width: 1.2em; color: var(--muted); }
+
+details[open] summary > span::before { content: "▾"; }
+
+summary .button { padding: 4px 12px; font-size: 14px; font-weight: 400; }
+
+.episodes { margin: 0 0 12px; padding: 0; list-style: none; }
+
+.episode {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 0;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.episode:disabled { cursor: default; opacity: 0.45; }
+
+.check {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+}
+
+.episode[aria-pressed="true"] .check { border-color: var(--accent); background: var(--accent); }
+
+.episode[aria-pressed="true"] .check::after { content: "✓"; color: var(--bg); font-size: 14px; font-weight: 700; }
+
+.episode-number { flex: none; width: 2ch; color: var(--muted); text-align: right; }
+
+.episode-text { display: flex; flex-direction: column; min-width: 0; }
+
+.episode-date { color: var(--muted); font-size: 13px; }

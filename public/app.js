@@ -6,6 +6,13 @@ const CATEGORIES = [
   ['stopped', 'Arrêtées'],
 ];
 
+const STATUS = {
+  Running: 'En diffusion',
+  Ended: 'Terminée',
+  'To Be Determined': 'Avenir incertain',
+  'In Development': 'En développement',
+};
+
 const main = document.querySelector('main');
 
 const esc = (value) => String(value).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -23,6 +30,8 @@ async function api(path, { method = 'GET', body } = {}) {
 }
 
 const poster = (url) => (url ? `<img class="poster" src="${esc(url)}" alt="" loading="lazy">` : '<div class="poster"></div>');
+
+const frenchDate = (isoDate) => isoDate.split('-').reverse().join('/');
 
 const progress = (seen, aired) => `
   <div class="progress-text">${seen} / ${aired} épisodes</div>
@@ -56,11 +65,93 @@ async function renderHome(tab) {
   main.querySelector('[aria-current="page"]').scrollIntoView({ block: 'nearest', inline: 'center' });
 }
 
+function episodeRow(episode, aired) {
+  let date = 'Date inconnue';
+  if (episode.airdate) date = aired ? frenchDate(episode.airdate) : `Diffusion le ${frenchDate(episode.airdate)}`;
+  return `
+    <li><button class="episode" data-episode="${episode.id}" aria-pressed="${episode.watched}" ${aired ? '' : 'disabled'}>
+      <span class="check"></span>
+      <span class="episode-number">${episode.number}</span>
+      <span class="episode-text">
+        <span class="episode-name">${esc(episode.name ?? '')}</span>
+        <span class="episode-date">${date}</span>
+      </span>
+    </button></li>`;
+}
+
+async function renderShow(id) {
+  const show = await api(`/shows/${id}`);
+  const isAired = (episode) => episode.airdate !== null && episode.airdate <= show.today;
+  const seasons = Map.groupBy(show.episodes, (episode) => episode.season);
+  const toTick = (episodes) => episodes.filter((episode) => isAired(episode) && !episode.watched);
+
+  function draw(openSeasons) {
+    const aired = show.episodes.filter(isAired);
+    main.innerHTML = `
+      <div class="show-header">
+        ${poster(show.image_url)}
+        <div class="show-info">
+          <h1>${esc(show.name)}</h1>
+          <div class="status">${esc(STATUS[show.status] ?? show.status ?? '')}</div>
+          ${progress(show.episodes.filter((episode) => episode.watched).length, aired.length)}
+        </div>
+      </div>
+      <div class="actions">
+        <button class="button" data-stop>${show.stopped ? 'Reprendre' : "J'arrête"}</button>
+        <button class="link-button" data-remove>Retirer de ma liste</button>
+      </div>
+      ${[...seasons].map(([season, episodes]) => `
+        <details data-season="${season}" ${openSeasons.has(season) ? 'open' : ''}>
+          <summary>
+            <span>Saison ${season} · ${episodes.filter((episode) => episode.watched).length} / ${episodes.filter(isAired).length} vus</span>
+            ${toTick(episodes).length > 0 ? `<button class="button" data-season-all="${season}">Tout marquer vu</button>` : ''}
+          </summary>
+          <ul class="episodes">${episodes.map((episode) => episodeRow(episode, isAired(episode))).join('')}</ul>
+        </details>`).join('')}`;
+  }
+
+  async function setWatched(episodes, watched) {
+    await api('/watched', { method: 'POST', body: { episodeIds: episodes.map((episode) => episode.id), watched } });
+    for (const episode of episodes) episode.watched = watched;
+  }
+
+  async function handle(target) {
+    if (target.dataset.episode) {
+      const episode = show.episodes.find((ep) => ep.id === Number(target.dataset.episode));
+      await setWatched([episode], !episode.watched);
+    } else if (target.dataset.seasonAll) {
+      await setWatched(toTick(seasons.get(Number(target.dataset.seasonAll))), true);
+    } else if (target.hasAttribute('data-stop')) {
+      await api(`/shows/${show.id}`, { method: 'PATCH', body: { stopped: !show.stopped } });
+      show.stopped = !show.stopped;
+    } else if (target.hasAttribute('data-remove')) {
+      if (!confirm(`Retirer « ${show.name} » de ta liste ? Les épisodes cochés seront perdus.`)) return;
+      await api(`/shows/${show.id}`, { method: 'DELETE' });
+      location.hash = '#/';
+      return;
+    }
+    draw(new Set([...main.querySelectorAll('details[open]')].map((details) => Number(details.dataset.season))));
+  }
+
+  main.onclick = (event) => {
+    const target = event.target.closest('button');
+    if (!target) return;
+    // A button inside <summary> would also toggle the season.
+    event.preventDefault();
+    handle(target).catch((error) => alert(`Erreur : ${error.message}`));
+  };
+
+  draw(new Set([toTick(show.episodes)[0]?.season]));
+}
+
 async function render() {
   const [, route, param] = location.hash.split('/');
   const known = CATEGORIES.some(([key]) => key === param);
+  main.onclick = null;
+  window.scrollTo(0, 0);
   try {
-    await renderHome(route === 'tab' && known ? param : 'in_progress');
+    if (route === 'show') await renderShow(Number(param));
+    else await renderHome(route === 'tab' && known ? param : 'in_progress');
   } catch (error) {
     main.innerHTML = `<p class="empty">Erreur : ${esc(error.message)}</p>`;
   }
