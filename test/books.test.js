@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SERIES } from '../src/aquilon.js';
 import { refreshBooks } from '../src/books.js';
 import worker from '../src/worker.js';
@@ -61,5 +61,52 @@ describe('scheduled', () => {
     };
     expect([...await hosts('0 5 * * *')]).toEqual(['api.tvmaze.com']);
     expect([...await hosts('0 6 * * 1')]).toEqual(['www.monde-aquilon.com']);
+  });
+});
+
+describe('books API', () => {
+  let db;
+  const call = (path, init) => worker.fetch(new Request(`http://localhost${path}`, init), { DB: db });
+  const get = async (path) => (await call(path)).json();
+  const post = (path, body) => call(path, { method: 'POST', body: JSON.stringify(body) });
+  const readIds = async () => (await db.prepare('SELECT book_id FROM books_read ORDER BY book_id').all()).results.map((r) => r.book_id);
+
+  beforeEach(async () => {
+    db = createD1();
+    await db.prepare(`INSERT INTO books (id, series, volume, title, published) VALUES
+      ('n1', 'Nains', 1, 'N', '2020-01-01'), ('e9', 'Elfes', 9, 'E', '2020-01-01'),
+      ('m1', 'Mages', 1, 'M', '2999-01-01'), ('mages-t04', 'Mages', 4, 'Arundill', '2020-08-26')`).run();
+    await db.prepare("INSERT INTO books_read VALUES ('e9', '2026-10-01T10:00:00.000Z')").run();
+  });
+
+  it('lists the volumes in global order with their read state', async () => {
+    const books = await get('/api/books');
+    expect(books.map((b) => [b.id, b.released, b.read_at !== null])).toEqual([
+      ['e9', true, true], ['n1', true, false], ['mages-t04', true, false], ['m1', false, false],
+    ]);
+  });
+
+  it('ticks and unticks, but never a volume that is not out yet', async () => {
+    await post('/api/books/read', { bookIds: ['n1', 'm1'], read: true });
+    expect(await readIds()).toEqual(['e9', 'n1']);
+    await post('/api/books/read', { bookIds: ['e9'], read: false });
+    expect(await readIds()).toEqual(['n1']);
+    expect((await post('/api/books/read', { bookIds: 'n1', read: true })).status).toBe(400);
+  });
+
+  it('returns the summary of a known volume', async () => {
+    const fetch = vi.fn(async () => new Response(fixture('mages-t04.html')));
+    vi.stubGlobal('fetch', fetch);
+    expect((await get('/api/books/mages-t04/summary')).summary).toMatch(/^Arundill a six ans/);
+    expect(fetch).toHaveBeenCalledWith('https://www.monde-aquilon.com/livre/mages-t04/');
+  });
+
+  it('refuses a summary for an unknown id without fetching', async () => {
+    const fetch = vi.fn();
+    vi.stubGlobal('fetch', fetch);
+    for (const id of ['foo', '..%2F..%2Fwp-admin']) {
+      expect((await call(`/api/books/${id}/summary`)).status).toBe(404);
+    }
+    expect(fetch).not.toHaveBeenCalled();
   });
 });

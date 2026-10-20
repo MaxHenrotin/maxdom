@@ -1,10 +1,9 @@
-import { BOOKS_CRON, refreshBooks } from './books.js';
+import { BOOKS_CRON, getSummary, listBooks, refreshBooks, setRead } from './books.js';
 import { categorize } from './categories.js';
 import { upsertShowStatements } from './db.js';
+import { error } from './http.js';
 import { refresh } from './refresh.js';
 import { toEpisodeRows, toShowRow, tvmazeGet } from './tvmaze.js';
-
-const error = (status, message) => Response.json({ error: message }, { status });
 
 // SUM over a LEFT JOIN is NULL for a show without episodes, hence the COALESCE.
 const SUMMARY_SQL = `
@@ -106,6 +105,10 @@ export default {
     const body = () => request.json().then((json) => json ?? {}, () => ({}));
     const db = env.DB;
 
+    // Book ids are slugs, which the numeric :id pattern above doesn't cover.
+    const summary = pathname.match(/^\/api\/books\/([a-z0-9-]+)\/summary$/);
+    if (request.method === 'GET' && summary) return getSummary(db, summary[1]);
+
     switch (route) {
       case 'GET /api/shows': return listShows(db, now);
       case 'GET /api/shows/:id': return getShow(db, now, id);
@@ -113,6 +116,8 @@ export default {
       case 'PATCH /api/shows/:id': return setStopped(db, id, await body());
       case 'DELETE /api/shows/:id': return removeShow(db, id);
       case 'POST /api/watched': return setWatched(db, now, await body());
+      case 'GET /api/books': return listBooks(db, now);
+      case 'POST /api/books/read': return setRead(db, now, await body());
       default: return error(404, 'not found');
     }
   },

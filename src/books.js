@@ -1,4 +1,5 @@
-import { SERIES, dedupeEditions, parseListing } from './aquilon.js';
+import { SERIES, dedupeEditions, parseListing, parseSummary, sortBooks } from './aquilon.js';
+import { error } from './http.js';
 
 const SITE = 'https://www.monde-aquilon.com';
 
@@ -48,4 +49,44 @@ export async function refreshBooks(env) {
       .run();
   }
   return { saved: books.length };
+}
+
+// A volume is out once its publication date is reached.
+export async function listBooks(db, now) {
+  const { results } = await db
+    .prepare('SELECT b.*, r.read_at FROM books b LEFT JOIN books_read r ON r.book_id = b.id')
+    .all();
+  const today = now.slice(0, 10);
+  return Response.json(sortBooks(results).map((book) => ({ ...book, released: book.published <= today })));
+}
+
+// Only volumes that are out can be ticked, whatever the client sends.
+export async function setRead(db, now, { bookIds, read }) {
+  if (!Array.isArray(bookIds) || !bookIds.every((id) => typeof id === 'string') || typeof read !== 'boolean') {
+    return error(400, 'expected { bookIds: string[], read: boolean }');
+  }
+  const ids = JSON.stringify(bookIds);
+  if (read) {
+    await db
+      .prepare(`
+        INSERT OR IGNORE INTO books_read (book_id, read_at)
+        SELECT id, ?2 FROM books
+        WHERE id IN (SELECT value FROM json_each(?1)) AND published <= ?3`)
+      .bind(ids, now, now.slice(0, 10))
+      .run();
+  } else {
+    await db.prepare('DELETE FROM books_read WHERE book_id IN (SELECT value FROM json_each(?1))').bind(ids).run();
+  }
+  return Response.json({ ok: true });
+}
+
+// The site sends no CORS headers, so the browser asks the Worker. Only known ids are
+// fetched, which keeps the Worker from requesting arbitrary pages.
+export async function getSummary(db, id) {
+  if (!(await db.prepare('SELECT 1 FROM books WHERE id = ?1').bind(id).first())) return error(404, 'unknown book');
+  try {
+    return Response.json({ summary: parseSummary(await fetchPage(`/livre/${id}/`)) });
+  } catch (err) {
+    return error(502, err.message);
+  }
 }
