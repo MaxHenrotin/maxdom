@@ -44,6 +44,7 @@ const STATUS = {
 };
 
 const main = document.querySelector('main');
+const footer = document.querySelector('footer');
 
 // True once the user moved inside the app, so "Retour" can go back in history.
 let navigated = false;
@@ -82,7 +83,6 @@ async function renderHome(category) {
   main.innerHTML = `
     ${sectionSwitch('series')}
     <div class="header">
-      <h1>Séries</h1>
       <div class="recap"><strong>${seen}</strong> épisodes</div>
       <a class="button" href="#/add">Ajouter une série</a>
     </div>
@@ -290,6 +290,9 @@ async function render() {
   const [, route, param] = location.hash.split('/');
   const category = (route === 'tab' && CATEGORIES.find(({ key }) => key === param)) || CATEGORIES[0];
   main.onclick = null;
+  footer.innerHTML = route === 'books'
+    ? '<a href="https://www.monde-aquilon.com">Données : Monde d\'Aquilon</a>'
+    : '<a href="https://www.tvmaze.com">Données : TVmaze</a>';
   window.scrollTo(0, 0);
   try {
     if (route === 'show') await renderShow(Number(param));

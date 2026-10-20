@@ -111,7 +111,6 @@ export async function renderBooks(main) {
     main.innerHTML = `
       ${sectionSwitch('books')}
       <div class="header">
-        <h1>Livres</h1>
         <div class="recap"><strong>${number(read)}</strong> / ${number(released)} lus</div>
       </div>
       <div class="tree">

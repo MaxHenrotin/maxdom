@@ -11,7 +11,7 @@ I open it in two moments:
 
 ## What it does
 
-1. A switch at the top of the app, "Séries | Livres", moves between the existing series part and a new books part. The two parts don't share screens.
+1. A switch at the top of the app, "Séries | Aquilon", moves between the existing series part and a new books part. The two parts don't share screens.
 2. The books part shows every Aquilon volume as a tree: one column per series, one row per volume, rows in global publication order.
 3. Tapping a volume's circle opens its card inside the tree, at that spot. From the card I can tick the volume as read or unread, and jump to the previous or next volume of the same series.
 4. The list of volumes keeps itself up to date from monde-aquilon.com.
@@ -80,9 +80,9 @@ A volume published after today (the site already lists Elfes T37 for 12/11/2026)
 
 ## Screens
 
-**Switch.** At the very top of the series home and of the books screen, a two-button pill, "Séries | Livres", in the app's accent colour, the active one filled. The show page and the add screen keep their "‹ Retour" and don't show it (my call). Routes: the series part keeps its hashes, the books part lives at `#/books`. The app still opens on the series part.
+**Switch.** At the very top of the series home and of the books screen, a two-button pill, "Séries | Aquilon", in the app's accent colour, the active one filled. The show page and the add screen keep their "‹ Retour" and don't show it (my call). Routes: the series part keeps its hashes, the books part lives at `#/books`. The app still opens on the series part.
 
-**Books header.** "Livres" with, next to it in small type, "57 / 131 lus": volumes read over volumes published to date, so an announced volume doesn't count until it's out (my call). Below, a row of short column labels in the series colours: Elfes, Nains, Orcs, Mages, Ogon, Guerres, Ynuma. That row sticks to the top of the screen while the tree scrolls, since the tree is about 4,000 px tall and the columns are hard to tell apart without it (my call).
+**Books header.** No title: the switch names the part. In small type, "57 / 131 lus": volumes read over volumes published to date, so an announced volume doesn't count until it's out (my call). Below, a row of short column labels in the series colours: Elfes, Nains, Orcs, Mages, Ogon, Guerres, Ynuma. That row sticks to the top of the screen while the tree scrolls, since the tree is about 4,000 px tall and the columns are hard to tell apart without it (my call).
 
 **Tree.**
 - On the left, a narrow gutter with the year, shown on the first row of each year.
