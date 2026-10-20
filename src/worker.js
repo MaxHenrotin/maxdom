@@ -25,25 +25,24 @@ async function listShows(db, today) {
   return Response.json(results.map(toSummary));
 }
 
+const showSummary = (db, today, id) =>
+  db.prepare(`${SUMMARY_SQL} WHERE s.id = ?2 GROUP BY s.id`).bind(today, id).first();
+
 async function getShow(db, today, id) {
-  const show = await db
-    .prepare('SELECT id, name, status, image_url, premiered_year, stopped FROM shows WHERE id = ?1')
-    .bind(id)
-    .first();
+  const show = await showSummary(db, today, id);
   if (!show) return error(404, 'unknown show');
   const { results } = await db
     .prepare(`
-      SELECT e.id, e.season, e.number, e.name, e.airdate, w.episode_id IS NOT NULL AS watched
+      SELECT e.id, e.season, e.number, e.name, e.airdate, w.watched_at
       FROM episodes e LEFT JOIN watched w ON w.episode_id = e.id
       WHERE e.show_id = ?1
       ORDER BY e.season, e.number`)
     .bind(id)
     .all();
   return Response.json({
-    ...show,
-    stopped: Boolean(show.stopped),
+    ...toSummary(show),
     today,
-    episodes: results.map((ep) => ({ ...ep, watched: Boolean(ep.watched) })),
+    episodes: results.map((ep) => ({ ...ep, watched: ep.watched_at !== null })),
   });
 }
 
@@ -55,8 +54,7 @@ async function addShow(db, today, { tvmazeId }) {
   const json = await tvmazeGet(`/shows/${tvmazeId}?embed=episodes`);
   if (!json) return error(404, 'unknown show');
   await db.batch(upsertShowStatements(db, toShowRow(json), toEpisodeRows(json)));
-  const summary = await db.prepare(`${SUMMARY_SQL} WHERE s.id = ?2 GROUP BY s.id`).bind(today, tvmazeId).first();
-  return Response.json(toSummary(summary), { status: 201 });
+  return Response.json(toSummary(await showSummary(db, today, tvmazeId)), { status: 201 });
 }
 
 async function setStopped(db, id, { stopped }) {

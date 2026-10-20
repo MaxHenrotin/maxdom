@@ -98,13 +98,13 @@ Adding a show through the app fetches the same endpoint once.
 
 Mobile first, and it should also look fine on a desktop browser.
 
-**Home.** Five tabs, one per category, each with its count. Order: En cours, À regarder plus tard, En attente de la suite, Terminées, Arrêtées. The app opens on "En cours". Each show is a row with its poster, name and progress ("34 / 62 épisodes"). Tapping a row opens the show's page. A button opens the add screen.
+**Home.** Five tabs, one per category, each with its count, on a single row that never scrolls, even on a phone: the count sits above a short label. Order and labels: En cours, Pas commencées, En attente, Terminées, Arrêtées. The app opens on "En cours". Each show is a row with its poster, name and progress ("34 / 62 épisodes"), sorted by episodes seen, most first, then by name. The progress bar is red in "Arrêtées", mauve in "Terminées" and green elsewhere. Tapping a row opens the show's page. A button opens the add screen.
 
-**Show page.** Poster, name, TVmaze status in French, progress. A "J'arrête" or "Reprendre" button, and a less prominent "Retirer de ma liste" with a confirmation. Then the seasons, collapsible, each with "x / y vus" and a "Tout marquer vu" button. Opening the page expands the first season that has an aired episode I haven't seen. Each episode shows its number, name and air date. Tapping it toggles it as seen. Unaired episodes are greyed out and can't be ticked.
+**Show page.** Poster, name, TVmaze status in French, progress. A "J'arrête" or "Reprendre" button, and a less prominent "Retirer de ma liste" with a confirmation. Then the seasons, collapsible, each with "x / y vus" and a "Tout marquer vu" button. Opening the page expands the first season that has an aired episode I haven't seen. Each episode shows its number, name and air date. Tapping its circle toggles it as seen. Tapping the rest of the row opens a short panel fetched from TVmaze `GET /episodes/<id>` in the browser: still image, runtime, TVmaze rating, summary (in English, TVmaze has no French) and, if seen, the date I ticked it ("Vu le …"). Unaired episodes are greyed out and can't be ticked. The progress bar takes the category colour, as on the home screen.
 
 **Add screen.** A search field. Results come from TVmaze `GET /search/shows?q=`, called straight from the browser (TVmaze allows CORS), and show poster, name and premiere year. Shows already in my list are labeled as such. Tapping "Ajouter" adds the show and goes back home on the "À regarder plus tard" tab.
 
-Navigation uses the URL hash (`#/`, `#/show/<id>`, `#/add`), so the back button works.
+Navigation uses the URL hash (`#/`, `#/show/<id>`, `#/add`), so the back button works. The show page and the add screen also have a "‹ Retour" link: it goes back in history, or home when the page was opened directly.
 
 ## API
 

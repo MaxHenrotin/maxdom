@@ -5,6 +5,8 @@
   --line: #e3e6ec;
   --accent: #0f766e;
   --track: #e6efee;
+  --stopped: #c62828;
+  --ended: #7b3fa0;
   color-scheme: light dark;
 }
 
@@ -16,6 +18,8 @@
     --line: #2a303b;
     --accent: #3fb8a9;
     --track: #213230;
+    --stopped: #ef6b6b;
+    --ended: #b98ad6;
   }
 }
 
@@ -62,29 +66,30 @@ h1 { margin: 0; font-size: 22px; }
 }
 
 .tabs {
-  display: flex;
-  gap: 20px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
   margin: 0 -16px;
-  padding: 0 16px;
-  overflow-x: auto;
+  padding: 0 8px;
   border-bottom: 1px solid var(--line);
-  scrollbar-width: none;
-}
-
-@media (min-width: 640px) {
-  .tabs { flex-wrap: wrap; row-gap: 0; overflow: visible; }
 }
 
 .tabs a {
-  flex: none;
-  padding: 12px 0 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 2px 8px;
   border-bottom: 2px solid transparent;
   color: var(--muted);
+  text-align: center;
   text-decoration: none;
-  font-size: 15px;
 }
 
-.tabs a[aria-current="page"] { border-color: var(--accent); color: var(--ink); font-weight: 600; }
+.tab-count { font-size: 18px; font-weight: 600; }
+
+.tab-label { font-size: 12px; line-height: 1.2; }
+
+.tabs a[aria-current="page"] { border-color: var(--accent); color: var(--ink); }
 
 .shows { margin: 0; padding: 0; list-style: none; }
 
@@ -115,6 +120,12 @@ h1 { margin: 0; font-size: 22px; }
 .bar { height: 4px; margin-top: 6px; border-radius: 2px; background: var(--track); overflow: hidden; }
 
 .bar span { display: block; height: 100%; background: var(--accent); }
+
+.bar.stopped span { background: var(--stopped); }
+
+.bar.ended span { background: var(--ended); }
+
+.back { display: inline-block; padding: 14px 0 0; color: var(--muted); text-decoration: none; font-size: 15px; }
 
 .empty { padding: 32px 0; color: var(--muted); }
 
@@ -165,12 +176,51 @@ summary .button { padding: 4px 12px; font-size: 14px; font-weight: 400; }
 
 .episode {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+}
+
+.episode.unaired .episode-main { opacity: 0.45; }
+
+.check {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-left: -10px;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.check::before {
+  content: "";
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  color: var(--bg);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.check[aria-pressed="true"]::before { content: "✓"; border-color: var(--accent); background: var(--accent); }
+
+.check:disabled { cursor: default; opacity: 0.45; }
+
+.episode-main {
+  flex: 1;
+  display: flex;
   align-items: center;
   gap: 12px;
-  width: 100%;
+  min-width: 0;
   padding: 10px 0;
   border: none;
-  border-bottom: 1px solid var(--line);
   background: none;
   color: inherit;
   font: inherit;
@@ -178,27 +228,19 @@ summary .button { padding: 4px 12px; font-size: 14px; font-weight: 400; }
   cursor: pointer;
 }
 
-.episode:disabled { cursor: default; opacity: 0.45; }
-
-.check {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border: 2px solid var(--line);
-  border-radius: 50%;
-}
-
-.episode[aria-pressed="true"] .check { border-color: var(--accent); background: var(--accent); }
-
-.episode[aria-pressed="true"] .check::after { content: "✓"; color: var(--bg); font-size: 14px; font-weight: 700; }
-
 .episode-number { flex: none; width: 2ch; color: var(--muted); text-align: right; }
 
 .episode-text { display: flex; flex-direction: column; min-width: 0; }
 
 .episode-date { color: var(--muted); font-size: 13px; }
+
+.episode-details { flex-basis: 100%; padding: 0 0 14px 34px; font-size: 14px; }
+
+.episode-details img { display: block; width: 100%; max-width: 320px; border-radius: 4px; }
+
+.episode-details p { margin: 8px 0 0; }
+
+.facts { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; padding: 0; list-style: none; color: var(--muted); font-size: 13px; }
 
 .search input {
   width: 100%;
