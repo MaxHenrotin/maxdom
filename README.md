@@ -47,7 +47,7 @@ curl "localhost:8787/cdn-cgi/local/scheduled?cron=0+6+*+*+1"
 
 ## The TV Time import
 
-The list was created once from the TV Time GDPR export with `npm run import` (reads `data/gdpr/`, writes `data/seed.sql` and `data/import-report.txt`). The import is done: `seed.sql` predates my manual corrections and starts by deleting every row, so it should not be loaded again.
+The list was created once from my TV Time GDPR export by a script that has since been deleted (it's in the git history, under `scripts/`). Its output, `data/seed.sql`, predates my manual corrections and starts by deleting every row, so it must never be loaded again.
 
 ## Going online later
 

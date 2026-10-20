@@ -78,7 +78,7 @@ Rules:
 6. `watched_at` comes from the row's `created_at`. `added_at` comes from the earliest `created_at` among the show's rows.
 7. The report lists, for each show: how it was resolved (by id or by name, with the TVmaze name, so I can catch a wrong name match), how many episodes matched, and which didn't. It also lists the skipped shows.
 
-The import is a Node script run once on my machine, reading the export extracted to `data/gdpr/`. It writes `data/seed.sql`, which was loaded once into the local D1, and `data/import-report.txt`. I then corrected the local database by hand (shows whose numbering differs between TV Time and TVmaze), so the local database, not `seed.sql`, is the reference from then on: the remote database is filled from an export of it. The whole `data/` folder is ignored by git. Both outputs contain personal data and stay out of git, along with the zip and the extracted folder.
+The import is a Node script run once on my machine, reading the export extracted to `data/gdpr/`. It writes `data/seed.sql`, which was loaded once into the local D1, and `data/import-report.txt`. I then corrected the local database by hand (shows whose numbering differs between TV Time and TVmaze), so the local database, not `seed.sql`, is the reference from then on: the remote database is filled from an export of it. The whole `data/` folder is ignored by git. Both outputs contain personal data and stay out of git, along with the zip and the extracted folder. The script was deleted once the import was done; it's still in the git history.
 
 TVmaze allows about 20 calls per 10 seconds. The import has to pace its calls and retry on HTTP 429. Around 110 shows means a few minutes, which is fine.
 
