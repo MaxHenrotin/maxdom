@@ -1,11 +1,36 @@
 const icon = (shape) => `<svg class="icon" viewBox="0 0 16 16" aria-hidden="true">${shape}</svg>`;
 
 const CATEGORIES = [
-  ['in_progress', 'En cours', icon('<path class="filled" d="M5 3l8 5-8 5z"/>')],
-  ['waiting', 'En attente', icon('<circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/>')],
-  ['ended', 'Terminées', icon('<path d="M3 8.5l3 3 7-7"/>')],
-  ['stopped', 'Arrêtées', icon('<rect class="filled" x="4" y="4" width="8" height="8" rx="1"/>')],
-  ['watch_later', 'Pas commencées', icon('<path d="M4 2h8v12l-4-3-4 3z"/>')],
+  {
+    key: 'in_progress',
+    label: 'En cours',
+    icon: icon('<path class="filled" d="M5 3l8 5-8 5z"/>'),
+    empty: 'Rien en cours. Une série dans <a href="#/tab/watch_later">À voir</a> ?',
+  },
+  {
+    key: 'waiting',
+    label: 'En attente',
+    icon: icon('<circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/>'),
+    empty: 'Aucune série en attente de la suite.',
+  },
+  {
+    key: 'ended',
+    label: 'Terminées',
+    icon: icon('<path d="M3 8.5l3 3 7-7"/>'),
+    empty: "Aucune série terminée pour l'instant.",
+  },
+  {
+    key: 'stopped',
+    label: 'Arrêtées',
+    icon: icon('<rect class="filled" x="4" y="4" width="8" height="8" rx="1"/>'),
+    empty: 'Aucune série arrêtée.',
+  },
+  {
+    key: 'watch_later',
+    label: 'À voir',
+    icon: icon('<path d="M4 2h8v12l-4-3-4 3z"/>'),
+    empty: "Rien à voir pour l'instant. <a href='#/add'>Ajouter une série</a>",
+  },
 ];
 
 const STATUS = {
@@ -52,39 +77,47 @@ const backLink = '<a class="back" href="#/" data-back>‹ Retour</a>';
 // Accepts "YYYY-MM-DD" with or without a time part.
 const frenchDate = (date) => date.slice(0, 10).split('-').reverse().join('/');
 
+const airDate = (airstamp) => new Date(airstamp).toLocaleDateString('fr-FR');
+
+// Counts calendar days in local time, so an episode airing tomorrow at 3am is one day away.
+function daysUntil(airstamp) {
+  const day = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  return Math.round((day(new Date(airstamp)) - day(new Date())) / 86_400_000);
+}
+
+const daysLeft = (show) => `<span class="days-left">(J-${show.next_airstamp ? `<span>${daysUntil(show.next_airstamp)}</span>` : '?'})</span>`;
+
 const progress = (show) => `
   <div class="progress-text">${show.seen} / ${show.aired} épisodes <span class="minutes">(${number(show.minutes)} / ${number(show.aired_minutes)} min)</span></div>
   <div class="bar ${show.category}"><span style="width: ${show.aired ? Math.min(100, (100 * show.seen) / show.aired) : 0}%"></span></div>`;
 
-async function renderHome(tab) {
+async function renderHome(category) {
   const shows = await api('/shows');
   const inTab = shows
-    .filter((show) => show.category === tab)
+    .filter((show) => show.category === category.key)
     .sort((a, b) => b.minutes - a.minutes || a.name.localeCompare(b.name, 'fr'));
-  const total = (field) => number(shows.reduce((sum, show) => sum + show[field], 0));
+  const seen = number(shows.reduce((sum, show) => sum + show.seen, 0));
   main.innerHTML = `
     <div class="header">
       <h1>Séries</h1>
-      <div class="recap">
-        <div><strong>${total('minutes')}</strong> min</div>
-        <div><strong>${total('seen')}</strong> épisodes</div>
-      </div>
+      <div class="recap"><strong>${seen}</strong> épisodes</div>
       <a class="button" href="#/add">Ajouter une série</a>
     </div>
     <nav class="tabs">
-      ${CATEGORIES.map(([key, label, categoryIcon]) => `
-        <a href="#/tab/${key}" ${key === tab ? 'aria-current="page"' : ''}>
-          <span class="tab-count">${categoryIcon}${shows.filter((show) => show.category === key).length}</span>
-          <span class="tab-label">${label}</span>
-        </a>`).join('')}
+      ${CATEGORIES.map(({ key, label, icon: categoryIcon }) => `
+        <a class="${key}" href="#/tab/${key}" aria-label="${label}" title="${label}" ${key === category.key ? 'aria-current="page"' : ''}>${categoryIcon}</a>`).join('')}
     </nav>
-    ${inTab.length === 0 ? '<p class="empty">Rien ici.</p>' : `
+    <h2 class="tab-title">${category.label} <span>(${inTab.length} ${inTab.length < 2 ? 'série' : 'séries'})</span></h2>
+    ${inTab.length === 0 ? `<p class="empty">${category.empty}</p>` : `
       <ul class="shows">
         ${inTab.map((show) => `
           <li><a href="#/show/${show.id}">
             ${poster(show.image_url)}
             <div class="show-info">
-              <div class="show-name">${esc(show.name)}</div>
+              <div class="show-title">
+                <span class="show-name">${esc(show.name)}</span>
+                ${category.key === 'waiting' ? daysLeft(show) : ''}
+              </div>
               ${progress(show)}
             </div>
           </a></li>`).join('')}
@@ -108,7 +141,7 @@ function episodeDetails(episode, info) {
 
 function episodeRow(episode, aired, info) {
   let date = 'Date inconnue';
-  if (episode.airdate) date = aired ? frenchDate(episode.airdate) : `Diffusion le ${frenchDate(episode.airdate)}`;
+  if (episode.airstamp) date = aired ? airDate(episode.airstamp) : `Diffusion le ${airDate(episode.airstamp)}`;
   return `
     <li class="episode ${aired ? '' : 'unaired'}">
       <button class="check" data-episode="${episode.id}" aria-pressed="${episode.watched}" aria-label="Vu" ${aired ? '' : 'disabled'}></button>
@@ -127,7 +160,7 @@ async function renderShow(id) {
   // The series summary is a nice-to-have: the page still opens when TVmaze is unreachable.
   const [show, tvmazeShow] = await Promise.all([api(`/shows/${id}`), tvmaze(`/shows/${id}`).catch(() => null)]);
   const summary = htmlText(tvmazeShow?.summary);
-  const isAired = (episode) => episode.airdate !== null && episode.airdate <= show.today;
+  const isAired = (episode) => episode.airstamp !== null && episode.airstamp <= show.now;
   const toTick = (episodes) => episodes.filter((episode) => isAired(episode) && !episode.watched);
   const episodeInfo = new Map();
   const openEpisodes = new Set();
@@ -165,9 +198,13 @@ async function renderShow(id) {
   const setWatched = (episodes, watched) =>
     api('/watched', { method: 'POST', body: { episodeIds: episodes.map((episode) => episode.id), watched } });
 
+  const redraw = () => draw(new Set([...main.querySelectorAll('details[open]')].map((details) => Number(details.dataset.season))));
+
   async function handle(target) {
     if (target.dataset.episode) {
       const episode = show.episodes.find((ep) => ep.id === Number(target.dataset.episode));
+      // Ticked right away; the redraw below, or the one after an error, sets the real state.
+      target.setAttribute('aria-pressed', !episode.watched);
       await setWatched([episode], !episode.watched);
     } else if (target.dataset.details) {
       const episodeId = Number(target.dataset.details);
@@ -188,7 +225,7 @@ async function renderShow(id) {
     }
     // Reload so counts, category and watched dates come from the server.
     if (!target.dataset.details) Object.assign(show, await api(`/shows/${show.id}`));
-    draw(new Set([...main.querySelectorAll('details[open]')].map((details) => Number(details.dataset.season))));
+    redraw();
   }
 
   main.onclick = (event) => {
@@ -202,7 +239,10 @@ async function renderShow(id) {
     if (!target) return;
     // A button inside <summary> would also toggle the season.
     event.preventDefault();
-    handle(target).catch((error) => alert(`Erreur : ${error.message}`));
+    handle(target).catch((error) => {
+      alert(`Erreur : ${error.message}`);
+      redraw();
+    });
   };
 
   draw(new Set([toTick(show.episodes)[0]?.season]));
@@ -265,13 +305,13 @@ async function renderAdd() {
 
 async function render() {
   const [, route, param] = location.hash.split('/');
-  const known = CATEGORIES.some(([key]) => key === param);
+  const category = (route === 'tab' && CATEGORIES.find(({ key }) => key === param)) || CATEGORIES[0];
   main.onclick = null;
   window.scrollTo(0, 0);
   try {
     if (route === 'show') await renderShow(Number(param));
     else if (route === 'add') await renderAdd();
-    else await renderHome(route === 'tab' && known ? param : 'in_progress');
+    else await renderHome(category);
   } catch (error) {
     main.innerHTML = `<p class="empty">Erreur : ${esc(error.message)}</p>`;
   }
