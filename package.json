@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "wrangler dev",
     "test": "vitest run",
-    "db:migrate": "wrangler d1 migrations apply tvtime --local"
+    "db:migrate": "wrangler d1 migrations apply tvtime --local",
+    "import": "node scripts/import.mjs data/gdpr",
+    "db:seed": "wrangler d1 execute tvtime --local --file=data/seed.sql"
   },
   "devDependencies": {
     "csv-parse": "^7.0.3",
