@@ -58,11 +58,11 @@ async function renderHome(tab) {
   main.innerHTML = `
     <div class="header">
       <h1>Séries</h1>
+      <div class="recap">
+        <div><strong>${total('minutes')}</strong> min</div>
+        <div><strong>${total('seen')}</strong> épisodes</div>
+      </div>
       <a class="button" href="#/add">Ajouter une série</a>
-    </div>
-    <div class="recap">
-      <div><span class="recap-number">${total('minutes')}</span> minutes regardées</div>
-      <div><span class="recap-number">${total('seen')}</span> épisodes vus</div>
     </div>
     <nav class="tabs">
       ${CATEGORIES.map(([key, label]) => `
