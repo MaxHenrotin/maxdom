@@ -10,6 +10,7 @@ const SUMMARY_SQL = `
   SELECT s.id, s.name, s.status, s.image_url, s.premiered_year, s.stopped,
     COALESCE(SUM(w.episode_id IS NOT NULL), 0) AS seen,
     COALESCE(SUM(CASE WHEN w.episode_id IS NOT NULL THEN e.runtime END), 0) AS minutes,
+    COALESCE(SUM(CASE WHEN e.airdate <= ?1 THEN e.runtime END), 0) AS aired_minutes,
     COALESCE(SUM(e.airdate <= ?1), 0) AS aired,
     COALESCE(SUM(e.airdate <= ?1 AND w.episode_id IS NULL), 0) AS airedUnseen
   FROM shows s

@@ -92,7 +92,11 @@ h1 { margin: 0; font-size: 22px; }
   text-decoration: none;
 }
 
-.tab-count { font-size: 18px; font-weight: 600; }
+.tab-count { display: flex; align-items: center; gap: 4px; font-size: 18px; font-weight: 600; }
+
+.icon { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.icon .filled { fill: currentColor; stroke: none; }
 
 .tab-label { font-size: 12px; line-height: 1.2; }
 
@@ -141,6 +145,20 @@ h1 { margin: 0; font-size: 22px; }
 .show-header .poster { width: 96px; }
 
 .show-header h1 { font-size: 20px; line-height: 1.25; }
+
+.show-summary {
+  display: -webkit-box;
+  margin: 0 0 12px;
+  overflow: hidden;
+  font-size: 14px;
+  cursor: pointer;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.show-summary.open { display: block; }
+
+.minutes { white-space: nowrap; }
 
 .status { margin: 2px 0 8px; color: var(--muted); font-size: 14px; }
 

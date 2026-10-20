@@ -21,7 +21,7 @@ describe('GET /api/shows/:id', () => {
 });
 
 describe('GET /api/shows', () => {
-  it('sums the runtime of the watched episodes of each show', async () => {
+  it('sums the runtime of the watched and of the aired episodes of each show', async () => {
     const db = createD1();
     await db.prepare("INSERT INTO shows (id, name, added_at) VALUES (7, 'Show', 'x'), (8, 'Empty', 'x')").run();
     await db.prepare(`INSERT INTO episodes (id, show_id, season, number, airdate, runtime) VALUES
@@ -30,6 +30,6 @@ describe('GET /api/shows', () => {
 
     const shows = await (await worker.fetch(new Request('http://localhost/api/shows'), { DB: db })).json();
 
-    expect(shows.map((show) => [show.id, show.minutes])).toEqual([[7, 50], [8, 0]]);
+    expect(shows.map((show) => [show.id, show.minutes, show.aired_minutes])).toEqual([[7, 50, 95], [8, 0, 0]]);
   });
 });

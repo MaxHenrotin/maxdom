@@ -1,9 +1,11 @@
+const icon = (shape) => `<svg class="icon" viewBox="0 0 16 16" aria-hidden="true">${shape}</svg>`;
+
 const CATEGORIES = [
-  ['in_progress', 'En cours'],
-  ['waiting', 'En attente'],
-  ['ended', 'Terminées'],
-  ['stopped', 'Arrêtées'],
-  ['watch_later', 'Pas commencées'],
+  ['in_progress', 'En cours', icon('<path class="filled" d="M5 3l8 5-8 5z"/>')],
+  ['waiting', 'En attente', icon('<circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/>')],
+  ['ended', 'Terminées', icon('<path d="M3 8.5l3 3 7-7"/>')],
+  ['stopped', 'Arrêtées', icon('<rect class="filled" x="4" y="4" width="8" height="8" rx="1"/>')],
+  ['watch_later', 'Pas commencées', icon('<path d="M4 2h8v12l-4-3-4 3z"/>')],
 ];
 
 const STATUS = {
@@ -38,6 +40,11 @@ async function tvmaze(path) {
   return res.json();
 }
 
+const number = (n) => n.toLocaleString('fr-FR');
+
+// TVmaze summaries are HTML; only their text is shown.
+const htmlText = (html) => (html ? new DOMParser().parseFromString(html, 'text/html').body.textContent : '');
+
 const poster = (url) => (url ? `<img class="poster" src="${esc(url)}" alt="" loading="lazy">` : '<div class="poster"></div>');
 
 const backLink = '<a class="back" href="#/" data-back>‹ Retour</a>';
@@ -45,16 +52,16 @@ const backLink = '<a class="back" href="#/" data-back>‹ Retour</a>';
 // Accepts "YYYY-MM-DD" with or without a time part.
 const frenchDate = (date) => date.slice(0, 10).split('-').reverse().join('/');
 
-const progress = (seen, aired, category) => `
-  <div class="progress-text">${seen} / ${aired} épisodes</div>
-  <div class="bar ${category}"><span style="width: ${aired ? Math.min(100, (100 * seen) / aired) : 0}%"></span></div>`;
+const progress = (show) => `
+  <div class="progress-text">${show.seen} / ${show.aired} épisodes <span class="minutes">(${number(show.minutes)} / ${number(show.aired_minutes)} min)</span></div>
+  <div class="bar ${show.category}"><span style="width: ${show.aired ? Math.min(100, (100 * show.seen) / show.aired) : 0}%"></span></div>`;
 
 async function renderHome(tab) {
   const shows = await api('/shows');
   const inTab = shows
     .filter((show) => show.category === tab)
     .sort((a, b) => b.minutes - a.minutes || a.name.localeCompare(b.name, 'fr'));
-  const total = (field) => shows.reduce((sum, show) => sum + show[field], 0).toLocaleString('fr-FR');
+  const total = (field) => number(shows.reduce((sum, show) => sum + show[field], 0));
   main.innerHTML = `
     <div class="header">
       <h1>Séries</h1>
@@ -65,9 +72,9 @@ async function renderHome(tab) {
       <a class="button" href="#/add">Ajouter une série</a>
     </div>
     <nav class="tabs">
-      ${CATEGORIES.map(([key, label]) => `
+      ${CATEGORIES.map(([key, label, categoryIcon]) => `
         <a href="#/tab/${key}" ${key === tab ? 'aria-current="page"' : ''}>
-          <span class="tab-count">${shows.filter((show) => show.category === key).length}</span>
+          <span class="tab-count">${categoryIcon}${shows.filter((show) => show.category === key).length}</span>
           <span class="tab-label">${label}</span>
         </a>`).join('')}
     </nav>
@@ -78,15 +85,14 @@ async function renderHome(tab) {
             ${poster(show.image_url)}
             <div class="show-info">
               <div class="show-name">${esc(show.name)}</div>
-              ${progress(show.seen, show.aired, show.category)}
+              ${progress(show)}
             </div>
           </a></li>`).join('')}
       </ul>`}`;
 }
 
-// TVmaze summaries are HTML; only their text is shown.
 function episodeDetails(episode, info) {
-  const summary = info.summary ? new DOMParser().parseFromString(info.summary, 'text/html').body.textContent : '';
+  const summary = htmlText(info.summary);
   const facts = [
     episode.watched_at && `Vu le ${frenchDate(episode.watched_at)}`,
     info.runtime && `${info.runtime} min`,
@@ -118,11 +124,14 @@ function episodeRow(episode, aired, info) {
 }
 
 async function renderShow(id) {
-  const show = await api(`/shows/${id}`);
+  // The series summary is a nice-to-have: the page still opens when TVmaze is unreachable.
+  const [show, tvmazeShow] = await Promise.all([api(`/shows/${id}`), tvmaze(`/shows/${id}`).catch(() => null)]);
+  const summary = htmlText(tvmazeShow?.summary);
   const isAired = (episode) => episode.airdate !== null && episode.airdate <= show.today;
   const toTick = (episodes) => episodes.filter((episode) => isAired(episode) && !episode.watched);
   const episodeInfo = new Map();
   const openEpisodes = new Set();
+  let summaryOpen = false;
 
   function draw(openSeasons) {
     const seasons = Map.groupBy(show.episodes, (episode) => episode.season);
@@ -133,9 +142,10 @@ async function renderShow(id) {
         <div class="show-info">
           <h1>${esc(show.name)}</h1>
           <div class="status">${esc(STATUS[show.status] ?? show.status ?? '')}</div>
-          ${progress(show.seen, show.aired, show.category)}
+          ${progress(show)}
         </div>
       </div>
+      ${summary ? `<p class="show-summary ${summaryOpen ? 'open' : ''}">${esc(summary)}</p>` : ''}
       <div class="actions">
         <button class="button" data-stop>${show.stopped ? 'Reprendre' : "J'arrête"}</button>
         <button class="link-button" data-remove>Retirer de ma liste</button>
@@ -182,6 +192,12 @@ async function renderShow(id) {
   }
 
   main.onclick = (event) => {
+    const summaryText = event.target.closest('.show-summary');
+    if (summaryText) {
+      summaryOpen = !summaryOpen;
+      summaryText.classList.toggle('open', summaryOpen);
+      return;
+    }
     const target = event.target.closest('button');
     if (!target) return;
     // A button inside <summary> would also toggle the season.
