@@ -42,12 +42,12 @@ function node(book) {
   return `<button class="node ${state}" data-book="${esc(book.id)}" style="${at(series(book))}" aria-label="${esc(label)}"></button>`;
 }
 
-// summary is null while it loads, '' when there is none.
+// summary is undefined while it loads, '' when there is none.
 function card(book, books, summary) {
   const { short, name } = SERIES[series(book)];
   const sameSeries = books.filter((other) => other.series === book.series).sort((a, b) => a.volume - b.volume);
   const index = sameSeries.indexOf(book);
-  const link = (other, text) => (other ? `<button class="link-button" data-go="${esc(other.id)}">${text}</button>` : '<span></span>');
+  const link = (other, text) => (other ? `<button class="link-button" data-book="${esc(other.id)}">${text}</button>` : '<span></span>');
   return `
     <div class="book-card">
       <div class="book-head">
@@ -62,7 +62,7 @@ function card(book, books, summary) {
           </div>
         </div>
       </div>
-      ${summary === null ? '<p class="show-summary loading"></p>' : summary ? `<p class="show-summary">${esc(summary)}</p>` : ''}
+      ${summary === undefined ? '<p class="show-summary loading"></p>' : summary ? `<p class="show-summary">${esc(summary)}</p>` : ''}
       <div class="book-links">
         ${link(sameSeries[index - 1], `‹ ${short} ${sameSeries[index - 1]?.volume}`)}
         ${link(sameSeries[index + 1], `${short} ${sameSeries[index + 1]?.volume} ›`)}
@@ -99,8 +99,11 @@ export async function renderBooks(main) {
   let busy = false;
 
   const openRow = () => main.querySelector('.book-row.open');
+  // render() replaces main.onclick when another page opens; a late redraw must not land on it.
+  const onPage = () => main.onclick === onClick;
 
   function draw({ growing = false } = {}) {
+    if (!onPage()) return;
     const span = spans(books);
     const released = books.filter((book) => book.released).length;
     const read = books.filter((book) => book.read_at).length;
@@ -119,10 +122,10 @@ export async function renderBooks(main) {
           year = bookYear;
           if (book.id !== openId) return `<div class="book-row">${label}${branches(span, row)}${node(book)}</div>`;
           return `
-            <div class="book-row open ${growing ? 'growing hidden' : 'settled'}" data-open="${esc(book.id)}" style="${at(series(book))}">
+            <div class="book-row open ${growing ? 'growing hidden' : 'settled'}" style="${at(series(book))}">
               ${label}${branches(span, row)}
               <div class="shell"></div>
-              ${card(book, books, summaries.get(book.id) ?? null)}
+              ${card(book, books, summaries.get(book.id))}
             </div>`;
         }).join('')}
       </div>`;
@@ -157,15 +160,15 @@ export async function renderBooks(main) {
   // The card opens before its summary arrives: the summary is cut to four lines, so a
   // four-line placeholder keeps the card's height. A failure just removes the placeholder.
   async function loadSummary(id) {
-    summaries.set(id, null);
     const summary = await api(`/books/${id}/summary`).then((data) => data.summary, () => '');
     summaries.set(id, summary);
-    const slot = main.querySelector(`[data-open="${id}"] .show-summary.loading`);
-    if (slot && summary) {
+    const slot = onPage() && openId === id && openRow().querySelector('.show-summary.loading');
+    if (!slot) return;
+    if (summary) {
       slot.textContent = summary;
       slot.classList.remove('loading');
     } else {
-      slot?.remove();
+      slot.remove();
     }
   }
 
@@ -189,21 +192,25 @@ export async function renderBooks(main) {
     draw();
   }
 
-  async function handle(event) {
-    const target = event.target.closest('[data-book], [data-go]');
-    if (target) await open(target.dataset.book ?? target.dataset.go);
-    else if (event.target.closest('[data-read]')) await toggleRead(event.target.closest('[data-read]'));
-    else if (event.target.closest('.show-summary')) event.target.closest('.show-summary').classList.toggle('open');
-    else if (event.target.closest('.book-row.open')) await shrink();
+  async function handle({ target }) {
+    const book = target.closest('[data-book]');
+    const check = target.closest('[data-read]');
+    const summary = target.closest('.show-summary');
+    if (book) await open(book.dataset.book);
+    else if (check) await toggleRead(check);
+    else if (summary) summary.classList.toggle('open');
+    // A tap anywhere but on the card closes it. Links leave the page, so they don't animate.
+    else if (!target.closest('.book-card, a')) await shrink();
   }
 
   // Taps during an animation are dropped, so two cards never move at once.
-  main.onclick = (event) => {
+  function onClick(event) {
     if (busy) return;
     busy = true;
     handle(event).finally(() => { busy = false; });
-  };
+  }
 
+  main.onclick = onClick;
   draw();
   main.querySelector('.node:not(.read):not(.unreleased)')?.scrollIntoView({ block: 'center' });
 }

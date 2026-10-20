@@ -97,9 +97,9 @@ A volume published after today (the site already lists Elfes T37 for 12/11/2026)
 3. Closing plays it backwards: the content fades out, the card shrinks back into the circle, and the tree closes up.
 4. The other series' lines keep running behind the card, which has a slightly see-through background. It should look like the tree stretched, not like a window placed on top of it.
 5. Only one card is open at a time. Opening another one, from the tree or from the card's previous/next links, closes the open one first.
-6. Tapping the card outside its buttons closes it.
+6. Tapping anywhere outside the card closes it. Taps inside the card only work its buttons.
 
-The approved prototype is `docs/superpowers/specs/2026-10-20-books-prototype.html` (open it in a browser and tap the circles). Its timings (about 0.45 s for the shape, content fading in near the end) are the target. Its markup and code are throwaway.
+The shape change takes about 0.45 s and the content fades in near its end. The clickable prototype that set these timings was removed once the feature was built; it's in the git history as `docs/superpowers/specs/2026-10-20-books-prototype.html`.
 
 **Card content.** Same layout as the show page header, smaller:
 - the cover on the left;
