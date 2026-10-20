@@ -8,6 +8,14 @@
   --stopped: #c62828;
   --ended: #7b3fa0;
   --in-progress: #fb923c;
+  /* Book series, in column order, with the colours Aquillon uses. */
+  --series-0: #eab308;
+  --series-1: #d97706;
+  --series-2: #16a34a;
+  --series-3: #7c3aed;
+  --series-4: #b45309;
+  --series-5: #dc2626;
+  --series-6: #0891b2;
   color-scheme: light dark;
 }
 
@@ -22,6 +30,9 @@
     --stopped: #ef6b6b;
     --ended: #b98ad6;
     --in-progress: #fdba74;
+    --series-3: #a78bfa;
+    --series-4: #d97a3a;
+    --series-5: #ef6b6b;
   }
 }
 
@@ -301,3 +312,61 @@ summary .button { padding: 4px 12px; font-size: 14px; font-weight: 400; }
 }
 
 .in-list { flex: none; color: var(--muted); font-size: 14px; }
+
+.switch { display: flex; justify-content: center; padding-top: 12px; }
+
+.switch a {
+  padding: 5px 18px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.switch a:first-child { border-radius: 999px 0 0 999px; }
+
+.switch a:last-child { border-left: none; border-radius: 0 999px 999px 0; }
+
+.switch a[aria-current="page"] { background: var(--accent); color: var(--bg); }
+
+.tree { padding-bottom: 16px; }
+
+.columns {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: 28px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
+
+/* 34px on the left hold the years; the seven series share the rest. */
+.columns span, .branch, .node { position: absolute; left: calc(34px + (var(--col) + 0.5) * (100% - 34px) / 7); }
+
+.columns span { top: 7px; transform: translateX(-50%); color: var(--colour); font-size: 10px; font-weight: 600; white-space: nowrap; }
+
+.book-row { position: relative; height: 30px; }
+
+.year { position: absolute; top: 8px; left: 0; color: var(--muted); font-size: 11px; }
+
+.branch { width: 2px; margin-left: -1px; background: var(--colour); opacity: 0.45; }
+
+.node {
+  top: 5px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-left: -10px;
+  padding: 0;
+  border: 2px solid var(--colour);
+  border-radius: 50%;
+  background: var(--bg);
+  cursor: pointer;
+}
+
+.node.read { border-color: var(--accent); background: var(--accent); }
+
+.node.read::before { content: "✓"; color: var(--bg); font-size: 11px; font-weight: 700; }
+
+.node.unreleased { opacity: 0.45; }

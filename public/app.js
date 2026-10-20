@@ -1,3 +1,6 @@
+import { renderBooks } from './books.js';
+import { api, esc, frenchDate, localDate, number, sectionSwitch } from './lib.js';
+
 const icon = (shape) => `<svg class="icon" viewBox="0 0 16 16" aria-hidden="true">${shape}</svg>`;
 
 const CATEGORIES = [
@@ -45,27 +48,11 @@ const main = document.querySelector('main');
 // True once the user moved inside the app, so "Retour" can go back in history.
 let navigated = false;
 
-const esc = (value) => String(value).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-
-// Throws on a non-OK response; the error carries the HTTP status.
-async function api(path, { method = 'GET', body } = {}) {
-  const res = await fetch(`/api${path}`, {
-    method,
-    headers: body === undefined ? {} : { 'content-type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-  const data = await res.json();
-  if (!res.ok) throw Object.assign(new Error(data.error), { status: res.status });
-  return data;
-}
-
 async function tvmaze(path) {
   const res = await fetch(`https://api.tvmaze.com${path}`);
   if (!res.ok) throw new Error(`TVmaze HTTP ${res.status}`);
   return res.json();
 }
-
-const number = (n) => n.toLocaleString('fr-FR');
 
 // TVmaze summaries are HTML; only their text is shown.
 const htmlText = (html) => (html ? new DOMParser().parseFromString(html, 'text/html').body.textContent : '');
@@ -73,11 +60,6 @@ const htmlText = (html) => (html ? new DOMParser().parseFromString(html, 'text/h
 const poster = (url) => (url ? `<img class="poster" src="${esc(url)}" alt="" loading="lazy">` : '<div class="poster"></div>');
 
 const backLink = '<a class="back" href="#/" data-back>‹ Retour</a>';
-
-// Accepts "YYYY-MM-DD" with or without a time part.
-const frenchDate = (date) => date.slice(0, 10).split('-').reverse().join('/');
-
-const airDate = (airstamp) => new Date(airstamp).toLocaleDateString('fr-FR');
 
 // Counts calendar days in local time, so an episode airing tomorrow at 3am is one day away.
 function daysUntil(airstamp) {
@@ -98,6 +80,7 @@ async function renderHome(category) {
     .sort((a, b) => b.minutes - a.minutes || a.name.localeCompare(b.name, 'fr'));
   const seen = number(shows.reduce((sum, show) => sum + show.seen, 0));
   main.innerHTML = `
+    ${sectionSwitch('series')}
     <div class="header">
       <h1>Séries</h1>
       <div class="recap"><strong>${seen}</strong> épisodes</div>
@@ -141,7 +124,7 @@ function episodeDetails(episode, info) {
 
 function episodeRow(episode, aired, info) {
   let date = 'Date inconnue';
-  if (episode.airstamp) date = aired ? airDate(episode.airstamp) : `Diffusion le ${airDate(episode.airstamp)}`;
+  if (episode.airstamp) date = aired ? localDate(episode.airstamp) : `Diffusion le ${localDate(episode.airstamp)}`;
   return `
     <li class="episode ${aired ? '' : 'unaired'}">
       <button class="check" data-episode="${episode.id}" aria-pressed="${episode.watched}" aria-label="Vu" ${aired ? '' : 'disabled'}></button>
@@ -311,6 +294,7 @@ async function render() {
   try {
     if (route === 'show') await renderShow(Number(param));
     else if (route === 'add') await renderAdd();
+    else if (route === 'books') await renderBooks(main);
     else await renderHome(category);
   } catch (error) {
     main.innerHTML = `<p class="empty">Erreur : ${esc(error.message)}</p>`;
