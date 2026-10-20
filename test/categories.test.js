@@ -2,9 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { categorize } from '../src/categories.js';
 
 describe('categorize', () => {
-  it('puts stopped shows in stopped, whatever was seen', () => {
+  it('puts stopped shows in stopped once an episode was seen', () => {
     expect(categorize({ stopped: true, status: 'Ended', seen: 10, airedUnseen: 0 })).toBe('stopped');
-    expect(categorize({ stopped: true, status: 'Ended', seen: 0, airedUnseen: 0 })).toBe('stopped');
+  });
+
+  it('puts shows with nothing seen in watch_later, even when stopped', () => {
+    expect(categorize({ stopped: true, status: 'Ended', seen: 0, airedUnseen: 8 })).toBe('watch_later');
   });
 
   it('puts shows with nothing seen in watch_later', () => {

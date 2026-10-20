@@ -13,7 +13,7 @@ Movies, ratings, comments, friends, stats and recommendations are all out.
    - **À regarder plus tard**: I haven't seen a single episode.
    - **En attente de la suite**: I've seen every aired episode and the show is still running (or its status is anything other than ended).
    - **Terminées**: I've seen every aired episode and the show has ended.
-   - **Arrêtées**: I decided to stop watching. This is a manual flag, and it wins over every other rule. A show I stopped stays here even if new seasons come out.
+   - **Arrêtées**: I decided to stop watching. This is a manual flag, and it wins over every rule except "À regarder plus tard": a show with no episode seen is always to watch later. A show I stopped stays here even if new seasons come out.
 2. On a show's page, lists every episode by season, with the ones I've seen and the ones I haven't. Episodes that haven't aired yet are greyed out and show their air date.
 3. Lets me tick or untick an episode, and mark all aired episodes of a season as seen in one tap.
 4. Lets me stop a show, or resume it (which puts it back in the computed categories).
@@ -71,7 +71,7 @@ I checked the export (`gdpr-data.zip`, 59 CSV files). The files that matter:
 Rules:
 
 1. The set of shows is the union of `s_id` from `user-series` rows, `tv_show_id` from `followed_tv_show.csv`, and `s_id` from `watch-episode` rows (one show, id 349078, only appears there and has no name).
-2. **Stopped** if the show was archived or unfollowed in TV Time. When a `user-series` row exists, use it: `is_archived = true` or `is_followed = false`. Otherwise use `followed_tv_show.csv`: `archived = 1` or `active = 0`. A show with neither row counts as unfollowed, so it's stopped. I confirmed this: I archive shows I won't continue (like The Bear, fully seen but I don't want the next seasons), and unfollowed shows also go to "Arrêtées", even the ones with zero episodes seen.
+2. **Stopped** if the show was archived or unfollowed in TV Time. When a `user-series` row exists, use it: `is_archived = true` or `is_followed = false`. Otherwise use `followed_tv_show.csv`: `archived = 1` or `active = 0`. A show with neither row counts as unfollowed, so it's stopped. I confirmed this: I archive shows I won't continue (like The Bear, fully seen but I don't want the next seasons), and unfollowed shows also go to "Arrêtées", except the ones with zero episodes seen, which stay in "À regarder plus tard".
 3. Resolve each TheTVDB id to TVmaze with `GET /lookup/shows?thetvdb=<id>`. That fails for some ids (TV Time's old Prison Break id 75340 returns nothing). Then fall back to `GET /singlesearch/shows?q=<name>`. If that also fails, or there is no name, skip the show and report it.
 4. Several TV Time ids can resolve to the same TVmaze show (Prison Break appears as 75340 and 360115). Merge them: union of seen episodes, and for `stopped` and `added_at`, the record that has a `user-series` row wins.
 5. Match each seen episode to a TVmaze episode by (season, number). Skip rows with `is_special = true`. Report every episode that doesn't match.
