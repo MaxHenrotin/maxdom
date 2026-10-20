@@ -1,5 +1,6 @@
 import { categorize } from './categories.js';
 import { upsertShowStatements } from './db.js';
+import { refresh } from './refresh.js';
 import { toEpisodeRows, toShowRow, tvmazeGet } from './tvmaze.js';
 
 const error = (status, message) => Response.json({ error: message }, { status });
@@ -112,5 +113,9 @@ export default {
       case 'POST /api/watched': return setWatched(db, today, await body());
       default: return error(404, 'not found');
     }
+  },
+
+  async scheduled(controller, env, ctx) {
+    ctx.waitUntil(refresh(env));
   },
 };
