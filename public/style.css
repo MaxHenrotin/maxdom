@@ -554,13 +554,17 @@ summary .button { margin-left: auto; }
   transition: all 0.45s ease;
 }
 
+/* The shell starts as the volume's circle, drawn like it (filled once read). */
 .growing .shell {
   top: 7px;
   left: calc(44px + (var(--col) + 0.5) * (100% - 44px) / 7 - 16px);
   width: 32px;
   height: 32px;
+  border-color: var(--colour);
   border-radius: 16px;
 }
+
+.growing.read .shell { background: var(--colour); }
 
 .settled .shell { inset: 0 0 34px; border-radius: 24px; }
 
@@ -592,12 +596,13 @@ summary .button { margin-left: auto; }
 .book-info .summary { margin-top: 10px; }
 
 /* The read check sits astride the card's bottom edge, on its series' column like the circle
-   in the tree (kept 4px inside the card for the last column), its coloured rim meeting the
-   border. While the card grows it travels from the circle's spot (.growing) down to the edge. */
+   in the tree, its coloured rim meeting the border. Opening splits the circle: its top half
+   unfolds into the card (the shell) while its bottom half (.growing) drops to the edge and
+   closes back into the whole check. */
 .read-toggle {
   position: absolute;
   top: calc(100% - 28px);
-  left: min(calc(44px + (var(--col) + 0.5) * (100% - 44px) / 7 - 28px), calc(100% - 60px));
+  left: calc(44px + (var(--col) + 0.5) * (100% - 44px) / 7 - 28px);
   display: grid;
   place-items: center;
   width: 56px;
@@ -608,10 +613,11 @@ summary .button { margin-left: auto; }
   background: var(--card);
   color: transparent;
   cursor: pointer;
-  transition: background-color 180ms ease, color 180ms ease, top 0.45s ease, transform 0.45s ease;
+  clip-path: inset(0);
+  transition: background-color 180ms ease, color 180ms ease, top 0.45s ease, transform 0.45s ease, clip-path 0.45s ease;
 }
 
-.growing .read-toggle { top: -5px; transform: scale(0.5714); }
+.growing .read-toggle { top: -5px; transform: scale(0.5714); clip-path: inset(50% 0 0 0); }
 
 .read-toggle .icon { width: 26px; height: 26px; stroke-width: 3; }
 

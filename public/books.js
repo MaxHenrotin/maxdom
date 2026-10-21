@@ -125,7 +125,7 @@ export async function renderBooks(main) {
           year = bookYear;
           if (book !== open) return `<div class="book-row">${label}${branches(span, row)}${node(book)}</div>`;
           return `
-            <div class="book-row open ${growing ? 'growing hidden' : 'settled'}" style="${at(series(book))}">
+            <div class="book-row open ${book.read_at ? 'read' : ''} ${growing ? 'growing hidden' : 'settled'}" style="${at(series(book))}">
               ${label}${branches(span, row)}
               <div class="shell"></div>
               ${card(book, summaries.get(book.id), summaryOpen, popped)}
