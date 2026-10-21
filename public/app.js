@@ -286,12 +286,16 @@ async function renderAdd() {
   };
 }
 
-function renderProfile() {
+// The logout link is Cloudflare Access's own, so it only works online.
+async function renderProfile() {
+  const { email } = await api('/me');
   main.innerHTML = `
     ${sectionSwitch('profile')}
     <section class="profile">
-      <p>Une copie complète de ta base, séries et tomes compris, au format SQL.</p>
-      <a class="button" href="/api/export" download>Télécharger ma base</a>
+      <p>Connecté avec <strong>${esc(email)}</strong>.</p>
+      <p>Une copie de tes séries et de tes tomes lus, au format SQL.</p>
+      <a class="button" href="/api/export" download>Télécharger mes données</a>
+      <p class="logout"><a href="/cdn-cgi/access/logout">Se déconnecter</a></p>
     </section>`;
 }
 
@@ -312,7 +316,7 @@ async function render() {
     if (route === 'show') await renderShow(Number(param));
     else if (route === 'add') await renderAdd();
     else if (route === 'books') await renderBooks(main);
-    else if (route === 'profile') renderProfile();
+    else if (route === 'profile') await renderProfile();
     else await renderHome(category);
   } catch (error) {
     main.innerHTML = `<p class="empty">Erreur : ${esc(error.message)}</p>`;

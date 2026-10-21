@@ -2,7 +2,7 @@ import { identify } from './auth.js';
 import { BOOKS_CRON, getSummary, listBooks, refreshBooks, setRead } from './books.js';
 import { categorize } from './categories.js';
 import { upsertShowStatements } from './db.js';
-import { exportDatabase } from './export.js';
+import { exportAccount } from './export.js';
 import { error } from './http.js';
 import { refresh } from './refresh.js';
 import { toEpisodeRows, toShowRow, tvmazeGet } from './tvmaze.js';
@@ -143,7 +143,8 @@ export default {
       case 'POST /api/watched': return setWatched(db, now, user, await body());
       case 'GET /api/books': return listBooks(db, now, user);
       case 'POST /api/books/read': return setRead(db, now, user, await body());
-      case 'GET /api/export': return exportDatabase(db, now);
+      case 'GET /api/me': return Response.json({ email: user.email });
+      case 'GET /api/export': return exportAccount(db, user, now);
       default: return error(404, 'not found');
     }
   },

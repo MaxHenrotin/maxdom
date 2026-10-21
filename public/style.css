@@ -429,3 +429,5 @@ summary .button { padding: 4px 12px; font-size: 14px; font-weight: 400; }
 .profile { padding: 24px 0; }
 
 .profile p { margin: 0 0 16px; color: var(--muted); }
+
+.profile .logout { margin: 24px 0 0; }

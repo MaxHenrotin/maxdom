@@ -72,6 +72,10 @@ describe('accounts', () => {
     expect(res.status).toBe(401);
   });
 
+  it('gives the email of the account', async () => {
+    expect(await (await call(createD1(), '/me', { email: 'a@example.com' })).json()).toEqual({ email: 'a@example.com' });
+  });
+
   it('creates the account on the first request', async () => {
     const db = createD1();
     expect(await (await call(db, '/shows', { email: 'new@example.com' })).json()).toEqual([]);
