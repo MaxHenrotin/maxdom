@@ -184,6 +184,7 @@ async function renderShow(id) {
     const stopped = show.category === 'stopped';
     const stoppable = stopped || show.category === 'in_progress' || show.category === 'waiting';
     const category = CATEGORIES.find(({ key }) => key === show.category);
+    // The chip's colour already gives the category, so its text is TVmaze's broadcast status.
     const status = STATUS[show.status] ?? show.status;
     patch(main, `
       ${backLink}
@@ -192,7 +193,7 @@ async function renderShow(id) {
           ${poster(show.image_url)}
           <div class="show-info">
             <h1>${esc(show.name)}</h1>
-            <span class="chip">${category.label}${status ? ` · ${esc(status)}` : ''}</span>
+            <span class="chip">${status ? esc(status) : category.label}</span>
             <div class="show-progress">
               ${ring(percent(show), 84, 8)}
               <p><strong>${show.seen} / ${show.aired}</strong><br>épisodes<br>${minutes(show)}</p>
