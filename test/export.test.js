@@ -26,6 +26,11 @@ describe('GET /api/export', () => {
     expect(sql).toContain("Inside Bill''s Brain");
   });
 
+  it('names the file after the part of the email before the @, in safe characters', async () => {
+    const res = await exportAs(createD1(), 'max.henrotin+"tv"@example.com');
+    expect(res.headers.get('content-disposition')).toMatch(/^attachment; filename="maxdom_max\.henrotin--tv-_\d{4}-\d{2}-\d{2}\.sql"$/);
+  });
+
   it('restores into another database without touching its accounts', async () => {
     const res = await exportAs(await twoAccounts(), 'a@example.com');
     const target = migratedDatabase();
@@ -36,7 +41,7 @@ describe('GET /api/export', () => {
 
     target.exec(await res.text());
 
-    expect(res.headers.get('content-disposition')).toMatch(/^attachment; filename="sauvegarde-\d{4}-\d{2}-\d{2}\.sql"$/);
+    expect(res.headers.get('content-disposition')).toMatch(/^attachment; filename="maxdom_a_\d{4}-\d{2}-\d{2}\.sql"$/);
     const a = target.prepare("SELECT id, created_at FROM users WHERE email = 'a@example.com'").get();
     expect(a).toEqual({ id: 3, created_at: '2026-10-21T10:00:00.000Z' });
     expect(target.prepare('SELECT * FROM user_shows ORDER BY user_id').all()).toEqual([

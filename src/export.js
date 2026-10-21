@@ -28,10 +28,12 @@ export async function exportAccount(db, user, now) {
       lines.push(`INSERT OR IGNORE INTO "${table}" (${columns}) VALUES(${values});`);
     }
   }
+  // The part of the email before the @, kept to characters that are safe in a file name and in the header.
+  const name = user.email.slice(0, user.email.lastIndexOf('@')).replace(/[^a-z0-9._-]/g, '-');
   return new Response(`${lines.join('\n')}\n`, {
     headers: {
       'content-type': 'application/sql; charset=utf-8',
-      'content-disposition': `attachment; filename="sauvegarde-${now.slice(0, 10)}.sql"`,
+      'content-disposition': `attachment; filename="maxdom_${name}_${now.slice(0, 10)}.sql"`,
     },
   });
 }
