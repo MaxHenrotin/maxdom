@@ -1,14 +1,28 @@
 export const esc = (value) => String(value).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
+// Reads are kept until the page reloads, which spares D1 and makes pages already seen open at
+// once. Any write may change any read, so it empties the cache, and a read that a write
+// overtook isn't kept: the server may have answered it before or after the write.
+const cache = new Map();
+let writes = 0;
+
 // Throws on a non-OK response; the error carries the HTTP status.
 export async function api(path, { method = 'GET', body } = {}) {
+  const read = method === 'GET';
+  if (read && cache.has(path)) return cache.get(path);
+  const writesBefore = writes;
   const res = await fetch(`/api${path}`, {
     method,
     headers: body === undefined ? {} : { 'content-type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
+  if (!read) {
+    writes++;
+    cache.clear();
+  }
   const data = await res.json();
   if (!res.ok) throw Object.assign(new Error(data.error), { status: res.status });
+  if (read && writes === writesBefore) cache.set(path, data);
   return data;
 }
 
