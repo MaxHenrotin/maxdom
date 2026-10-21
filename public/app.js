@@ -202,10 +202,7 @@ async function renderShow(id) {
         ${summary ? `<div class="show-summary">${summaryBlock(summary, summaryOpen)}</div>` : ''}
       </section>
       ${stopped ? '<p class="muted hint">Reprends la série pour cocher de nouveaux épisodes.</p>' : ''}
-      <div class="actions">
-        ${stoppable ? `<button class="button" data-stop>${stopped ? 'Reprendre' : "J'arrête"}</button>` : ''}
-        <button class="link-button" data-remove>Retirer de ma liste</button>
-      </div>
+      ${stoppable ? `<button class="button wide" data-stop>${stopped ? 'Reprendre la série' : 'Arrêter de regarder'}</button>` : ''}
       ${[...seasons].map(([season, episodes]) => `
         <details class="card season" data-season="${season}" ${openSeasons.has(season) ? 'open' : ''}>
           <summary>
@@ -216,7 +213,10 @@ async function renderShow(id) {
           <ul class="episodes">
             ${episodes.map((ep) => episodeRow(ep, isAired(ep), stopped, openEpisodes.has(ep.id) && episodeInfo.get(ep.id), ep.id === popped)).join('')}
           </ul>
-        </details>`).join('')}`);
+        </details>`).join('')}
+      <div class="danger-zone">
+        <button class="danger" data-remove>${icon(ICONS.warning)}Supprimer définitivement cette série</button>
+      </div>`);
     trimMore(main);
     popped = null;
   }
@@ -246,7 +246,8 @@ async function renderShow(id) {
     } else if (target.hasAttribute('data-stop')) {
       await api(`/shows/${show.id}`, { method: 'PATCH', body: { stopped: !show.stopped } });
     } else if (target.hasAttribute('data-remove')) {
-      if (!confirm(`Retirer « ${show.name} » de ta liste ? Les épisodes cochés seront perdus.`)) return;
+      const lost = show.seen === 0 ? '' : ` Tes ${show.seen} épisode${show.seen > 1 ? 's' : ''} vu${show.seen > 1 ? 's' : ''} ser${show.seen > 1 ? 'ont' : 'a'} effacé${show.seen > 1 ? 's' : ''}.`;
+      if (!confirm(`Supprimer définitivement « ${show.name} » ?${lost}`)) return;
       await api(`/shows/${show.id}`, { method: 'DELETE' });
       location.hash = '#/';
       return;

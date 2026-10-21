@@ -14,6 +14,7 @@
   --ended: #7b3fa0;
   --stopped: #c62828;
   --watch-later: #687082;
+  --danger: #c62828;
   /* Book series, in column order, with the colours Aquillon uses. */
   --series-0: #eab308;
   --series-1: #d97706;
@@ -49,6 +50,7 @@
     --ended: #b98ad6;
     --stopped: #ef6b6b;
     --watch-later: #9aa2b1;
+    --danger: #ef6b6b;
     --series-2: #22c55e;
     --series-3: #a78bfa;
     --series-4: #d97a3a;
@@ -249,8 +251,6 @@ h1 { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 800; letter-spac
 
 .button.small { height: 36px; padding: 0 12px; border-radius: 12px; font-size: 13px; }
 
-.link-button { padding: 12px 8px; border: none; background: none; color: var(--muted); font-size: 14px; font-weight: 600; cursor: pointer; }
-
 .chip {
   display: inline-block;
   margin-top: 8px;
@@ -371,9 +371,12 @@ h1 { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 800; letter-spac
 
 .hint { margin: 12px 4px 0; }
 
-.actions { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+.button.wide { width: 100%; margin-top: 12px; }
 
-.actions .button { flex: 1; }
+/* Deleting a show sits apart at the very bottom, out of the way of a stray tap. */
+.danger-zone { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line); text-align: center; }
+
+.danger { display: inline-flex; align-items: center; gap: 8px; padding: 12px 8px; border: none; background: none; color: var(--danger); font-size: 14px; font-weight: 700; cursor: pointer; }
 
 .season { margin-top: 12px; overflow: hidden; }
 

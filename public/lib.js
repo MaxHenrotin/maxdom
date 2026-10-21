@@ -31,6 +31,7 @@ export const ICONS = {
   plus: 'M9 3v12M3 9h12',
   download: 'M9 3v8M5.5 7.5L9 11l3.5-3.5M4 14.5h10',
   logout: 'M7 4H4.5v10H7M10 6l3 3-3 3M13 9H7',
+  warning: 'M9 2.5l7 12.5H2zM9 7.5v3.5M9 13.2v.1',
 };
 
 // Applies new markup to a container by changing only what differs, so the elements that stay
