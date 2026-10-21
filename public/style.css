@@ -571,10 +571,12 @@ summary .button { margin-left: auto; }
   gap: 16px;
   margin-bottom: 34px;
   padding: 16px 16px 36px;
-  transition: opacity 0.2s;
 }
 
-.hidden .book-card { opacity: 0; }
+.book-card > * { transition: opacity 0.2s; }
+
+/* While the card grows or shrinks, only the read check shows: it is the volume's circle. */
+.hidden .book-card > :not(.read-toggle) { opacity: 0; }
 
 /* The cover keeps its size and place when the summary opens and the card grows. */
 .book-card > .poster { align-self: flex-start; width: 116px; border-radius: 14px; }
@@ -589,11 +591,13 @@ summary .button { margin-left: auto; }
 
 .book-info .summary { margin-top: 10px; }
 
-/* The read check sits astride the card's bottom edge, its coloured rim meeting the border. */
+/* The read check sits astride the card's bottom edge, on its series' column like the circle
+   in the tree (kept 4px inside the card for the last column), its coloured rim meeting the
+   border. While the card grows it travels from the circle's spot (.growing) down to the edge. */
 .read-toggle {
   position: absolute;
-  bottom: -28px;
-  left: calc(50% - 28px);
+  top: calc(100% - 28px);
+  left: min(calc(44px + (var(--col) + 0.5) * (100% - 44px) / 7 - 28px), calc(100% - 60px));
   display: grid;
   place-items: center;
   width: 56px;
@@ -604,8 +608,10 @@ summary .button { margin-left: auto; }
   background: var(--card);
   color: transparent;
   cursor: pointer;
-  transition: background-color 180ms ease, color 180ms ease;
+  transition: background-color 180ms ease, color 180ms ease, top 0.45s ease, transform 0.45s ease;
 }
+
+.growing .read-toggle { top: -5px; transform: scale(0.5714); }
 
 .read-toggle .icon { width: 26px; height: 26px; stroke-width: 3; }
 
