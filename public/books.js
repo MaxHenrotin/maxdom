@@ -1,4 +1,4 @@
-import { api, esc, frenchDate, localDate, number, sectionSwitch } from './lib.js';
+import { ICONS, api, esc, frenchDate, icon, localDate, number, setAccent } from './lib.js';
 
 // Column order of the tree. Their colours are --series-0 to --series-6 in style.css.
 const SERIES = [
@@ -14,7 +14,7 @@ const SERIES = [
 const series = (book) => SERIES.findIndex(({ name }) => name === book.series);
 
 // Places an element on a series' column; the CSS turns --col into a left offset.
-const at = (col) => `--col: ${col}; --colour: var(--series-${col})`;
+const at = (col) => `--col: ${col}; --colour: var(--series-${col}); --on-colour: var(--on-series-${col})`;
 
 // Rows of each series' first and last volume, so its branch starts and stops at their circles.
 function spans(books) {
@@ -26,12 +26,13 @@ function spans(books) {
   return span;
 }
 
-// In an open row the circle sits on the first 30px, so a branch ending there stops at 15px.
+// A row is 46px high with its circle in the middle; in an open row the circle's spot is the
+// first 46px, so a branch ending there stops 23px down.
 function branches(span, row) {
   return span.map((range, col) => {
     if (!range || row < range[0] || row > range[1]) return '';
-    const top = row === range[0] ? '15px' : '0';
-    const bottom = row === range[1] ? 'calc(100% - 15px)' : '0';
+    const top = row === range[0] ? '23px' : '0';
+    const bottom = row === range[1] ? 'calc(100% - 23px)' : '0';
     return `<span class="branch" style="${at(col)}; top: ${top}; bottom: ${bottom}"></span>`;
   }).join('');
 }
@@ -39,30 +40,32 @@ function branches(span, row) {
 function node(book) {
   const state = book.read_at ? 'read' : book.released ? '' : 'unreleased';
   const label = `${SERIES[series(book)].short} ${book.volume} : ${book.title}`;
-  return `<button class="node ${state}" data-book="${esc(book.id)}" style="${at(series(book))}" aria-label="${esc(label)}">${book.read_at ? '' : book.volume}</button>`;
+  return `<button class="node ${state}" data-book="${esc(book.id)}" style="${at(series(book))}" aria-label="${esc(label)}">${book.read_at ? icon(ICONS.check) : book.volume}</button>`;
 }
 
 // summary is undefined while it loads, '' when there is none.
-function card(book, books, summary) {
+function card(book, books, summary, glowing) {
   const { short, name } = SERIES[series(book)];
   const sameSeries = books.filter((other) => other.series === book.series).sort((a, b) => a.volume - b.volume);
   const index = sameSeries.indexOf(book);
-  const link = (other, text) => (other ? `<button class="link-button" data-book="${esc(other.id)}">${text}</button>` : '<span></span>');
+  const link = (other, text) => (other ? `<button class="pill" data-book="${esc(other.id)}">${text}</button>` : '<span></span>');
+  let label = `Paraît le ${frenchDate(book.published)}`;
+  if (book.read_at) label = `Lu le ${localDate(book.read_at)}`;
+  else if (book.released) label = 'Marquer comme lu';
   return `
     <div class="book-card">
       <div class="book-head">
         ${book.cover_url ? `<img class="poster" src="${esc(book.cover_url)}" alt="">` : '<div class="poster"></div>'}
         <div>
+          <span class="chip">${esc(name)} · Tome ${book.volume}</span>
           <div class="book-title">${esc(book.title)}</div>
-          <div><span class="book-series">${esc(name)}</span> · Tome ${book.volume}</div>
-          <div class="status">${book.released ? 'Paru' : 'Paraît'} le ${frenchDate(book.published)}</div>
-          <div class="book-read">
-            <button class="check" data-read aria-pressed="${Boolean(book.read_at)}" aria-label="Lu" ${book.released ? '' : 'disabled'}></button>
-            <span>${book.read_at ? `Lu le ${localDate(book.read_at)}` : 'Pas encore lu'}</span>
-          </div>
+          <div class="muted">${book.released ? 'Paru' : 'Paraît'} le ${frenchDate(book.published)}</div>
         </div>
       </div>
-      ${summary === undefined ? '<p class="show-summary loading"></p>' : summary ? `<p class="show-summary">${esc(summary)}</p>` : ''}
+      <button class="read-button ${glowing ? 'glow' : ''}" data-read aria-pressed="${Boolean(book.read_at)}" ${book.released ? '' : 'disabled'}>
+        ${book.read_at ? icon(ICONS.check) : ''}${label}
+      </button>
+      ${summary === undefined ? '<p class="show-summary loading"></p>' : summary ? `<button class="show-summary" data-summary><span>${esc(summary)}</span></button>` : ''}
       <div class="book-links">
         ${link(sameSeries[index - 1], `‹ ${short} ${sameSeries[index - 1]?.volume}`)}
         ${link(sameSeries[index + 1], `${short} ${sameSeries[index + 1]?.volume} ›`)}
@@ -82,7 +85,7 @@ const nextFrame = () => new Promise((resolve) => requestAnimationFrame(() => req
 
 // Transitions need pixel sizes at both ends; once open, the card sizes itself so the summary can expand.
 function pinToCard(row) {
-  const box = { left: '0px', top: '0px', width: `${row.clientWidth}px`, height: `${row.scrollHeight - 8}px`, borderRadius: '14px' };
+  const box = { left: '0px', top: '0px', width: `${row.clientWidth}px`, height: `${row.scrollHeight - 10}px`, borderRadius: '24px' };
   Object.assign(row.querySelector('.shell').style, box);
   row.style.height = `${row.scrollHeight}px`;
 }
@@ -93,10 +96,13 @@ function unpin(row) {
 }
 
 export async function renderBooks(main) {
+  setAccent('');
   let books = await api('/books');
   const summaries = new Map();
   let openId = null;
   let busy = false;
+  // The volume just ticked as read lights up on the next draw.
+  let glowId = null;
 
   const openRow = () => main.querySelector('.book-row.open');
   // render() replaces main.onclick when another page opens; a late redraw must not land on it.
@@ -109,12 +115,14 @@ export async function renderBooks(main) {
     const read = books.filter((book) => book.read_at).length;
     let year = null;
     main.innerHTML = `
-      ${sectionSwitch('books')}
-      <div class="header">
-        <div class="recap"><strong>${number(read)}</strong> / ${number(released)} lus</div>
-      </div>
+      <header class="page-header">
+        <div>
+          <h1>Aquilon</h1>
+          <p class="recap"><strong>${number(read)}</strong> / ${number(released)} tomes lus</p>
+        </div>
+      </header>
       <div class="tree">
-        <div class="columns">${SERIES.map(({ short }, col) => `<span style="${at(col)}">${short}</span>`).join('')}</div>
+        <div class="columns"><div>${SERIES.map(({ short }, col) => `<span style="${at(col)}">${short}</span>`).join('')}</div></div>
         ${books.map((book, row) => {
           const bookYear = book.published.slice(0, 4);
           const label = bookYear === year ? '' : `<span class="year">${bookYear}</span>`;
@@ -124,10 +132,11 @@ export async function renderBooks(main) {
             <div class="book-row open ${growing ? 'growing hidden' : 'settled'}" style="${at(series(book))}">
               ${label}${branches(span, row)}
               <div class="shell"></div>
-              ${card(book, books, summaries.get(book.id))}
+              ${card(book, books, summaries.get(book.id), book.id === glowId)}
             </div>`;
         }).join('')}
       </div>`;
+    glowId = null;
   }
 
   async function grow() {
@@ -153,6 +162,7 @@ export async function renderBooks(main) {
     row.classList.add('growing');
     await wait(GROW_MS);
     openId = null;
+    setAccent('');
     draw();
   }
 
@@ -164,8 +174,7 @@ export async function renderBooks(main) {
     const slot = onPage() && openId === id && openRow().querySelector('.show-summary.loading');
     if (!slot) return;
     if (summary) {
-      slot.textContent = summary;
-      slot.classList.remove('loading');
+      slot.outerHTML = `<button class="show-summary" data-summary><span>${esc(summary)}</span></button>`;
     } else {
       slot.remove();
     }
@@ -174,17 +183,19 @@ export async function renderBooks(main) {
   async function open(id) {
     await shrink();
     openId = id;
+    setAccent(`series-${series(books.find((book) => book.id === id))}`);
     draw({ growing: true });
     if (!summaries.has(id)) loadSummary(id);
     await grow();
   }
 
-  async function toggleRead(check) {
+  async function toggleRead(button) {
     const book = books.find(({ id }) => id === openId);
-    check.setAttribute('aria-pressed', !book.read_at);
+    button.setAttribute('aria-pressed', !book.read_at);
     try {
       await api('/books/read', { method: 'POST', body: { bookIds: [book.id], read: !book.read_at } });
       books = await api('/books');
+      if (!book.read_at) glowId = book.id;
     } catch (error) {
       alert(`Erreur : ${error.message}`);
     }
@@ -193,10 +204,10 @@ export async function renderBooks(main) {
 
   async function handle({ target }) {
     const book = target.closest('[data-book]');
-    const check = target.closest('[data-read]');
-    const summary = target.closest('.show-summary');
+    const readButton = target.closest('[data-read]');
+    const summary = target.closest('[data-summary]');
     if (book) await open(book.dataset.book);
-    else if (check) await toggleRead(check);
+    else if (readButton) await toggleRead(readButton);
     else if (summary) summary.classList.toggle('open');
     // A tap anywhere but on the card closes it. Links leave the page, so they don't animate.
     else if (!target.closest('.book-card, a')) await shrink();

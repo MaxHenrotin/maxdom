@@ -1,37 +1,35 @@
 import { renderBooks } from './books.js';
-import { api, esc, frenchDate, localDate, number, sectionSwitch } from './lib.js';
-
-const icon = (shape) => `<svg class="icon" viewBox="0 0 16 16" aria-hidden="true">${shape}</svg>`;
+import { ICONS, api, esc, frenchDate, icon, localDate, number, setAccent } from './lib.js';
 
 const CATEGORIES = [
   {
     key: 'in_progress',
     label: 'En cours',
-    icon: icon('<path class="filled" d="M5 3l8 5-8 5z"/>'),
+    icon: 'M5.5 3.5l9 5.5-9 5.5z',
     empty: 'Rien en cours. Une série dans <a href="#/tab/watch_later">À voir</a> ?',
   },
   {
     key: 'waiting',
     label: 'En attente',
-    icon: icon('<circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/>'),
+    icon: 'M9 2.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13zM9 5.5V9l2.5 2',
     empty: 'Aucune série en attente de la suite.',
   },
   {
     key: 'ended',
     label: 'Terminées',
-    icon: icon('<path d="M3 8.5l3 3 7-7"/>'),
+    icon: 'M3.5 9.5l3.5 3.5 7.5-8',
     empty: "Aucune série terminée pour l'instant.",
   },
   {
     key: 'stopped',
     label: 'Arrêtées',
-    icon: icon('<rect class="filled" x="4" y="4" width="8" height="8" rx="1"/>'),
+    icon: 'M5 5h8v8H5z',
     empty: 'Aucune série arrêtée.',
   },
   {
     key: 'watch_later',
     label: 'À voir',
-    icon: icon('<path d="M4 2h8v12l-4-3-4 3z"/>'),
+    icon: 'M4.5 2.5h9v13l-4.5-3.5-4.5 3.5z',
     empty: "Rien à voir pour l'instant. <a href='#/add'>Ajouter une série</a>",
   },
 ];
@@ -45,6 +43,7 @@ const STATUS = {
 
 const main = document.querySelector('main');
 const footer = document.querySelector('footer');
+const tabbar = document.querySelector('.tabbar');
 
 // True once the user moved inside the app, so "Retour" can go back in history.
 let navigated = false;
@@ -60,7 +59,21 @@ const htmlText = (html) => (html ? new DOMParser().parseFromString(html, 'text/h
 
 const poster = (url) => (url ? `<img class="poster" src="${esc(url)}" alt="" loading="lazy">` : '<div class="poster"></div>');
 
-const backLink = '<a class="back" href="#/" data-back>‹ Retour</a>';
+const backLink = `<a class="back" href="#/" data-back aria-label="Retour">${icon(ICONS.back)}</a>`;
+
+const percent = (show) => (show.aired ? Math.min(100, Math.round((100 * show.seen) / show.aired)) : 0);
+
+// A progress ring in the colour of the show's category, with the share seen in its centre.
+function ring(pct, size, stroke) {
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  return `
+    <svg class="ring" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" role="img" aria-label="${pct} % vu" style="--circumference: ${c}">
+      <circle class="ring-track" cx="${size / 2}" cy="${size / 2}" r="${r}" stroke-width="${stroke}"/>
+      <circle class="ring-fill" cx="${size / 2}" cy="${size / 2}" r="${r}" stroke-width="${stroke}" stroke-dasharray="${(c * pct) / 100} ${c}" transform="rotate(-90 ${size / 2} ${size / 2})"/>
+      <text x="50%" y="50%" dy="0.35em">${pct} %</text>
+    </svg>`;
+}
 
 // Counts calendar days in local time, so an episode airing tomorrow at 3am is one day away.
 function daysUntil(airstamp) {
@@ -68,41 +81,42 @@ function daysUntil(airstamp) {
   return Math.round((day(new Date(airstamp)) - day(new Date())) / 86_400_000);
 }
 
-const daysLeft = (show) => `<span class="days-left">(J-${show.next_airstamp ? `<span>${daysUntil(show.next_airstamp)}</span>` : '?'})</span>`;
-
-const progress = (show) => `
-  <div class="progress-text">${show.seen} / ${show.aired} épisodes <span class="minutes">(${number(show.minutes)} / ${number(show.aired_minutes)} min)</span></div>
-  <div class="bar ${show.category}"><span style="width: ${show.aired ? Math.min(100, (100 * show.seen) / show.aired) : 0}%"></span></div>`;
+const minutes = (show) => `${number(show.minutes)} / ${number(show.aired_minutes)} min`;
 
 async function renderHome(category) {
+  setAccent(category.key);
   const shows = await api('/shows');
   const inTab = shows
     .filter((show) => show.category === category.key)
     .sort((a, b) => b.minutes - a.minutes || a.name.localeCompare(b.name, 'fr'));
+  const count = (key) => shows.filter((show) => show.category === key).length;
   const seen = number(shows.reduce((sum, show) => sum + show.seen, 0));
   main.innerHTML = `
-    ${sectionSwitch('series')}
-    <div class="header">
-      <div class="recap"><strong>${seen}</strong> épisodes</div>
-      <a class="button" href="#/add">Ajouter une série</a>
-    </div>
-    <nav class="tabs">
-      ${CATEGORIES.map(({ key, label, icon: categoryIcon }) => `
-        <a class="${key}" href="#/tab/${key}" aria-label="${label}" title="${label}" ${key === category.key ? 'aria-current="page"' : ''}>${categoryIcon}</a>`).join('')}
+    <header class="page-header">
+      <div>
+        <h1>Séries</h1>
+        <p class="recap"><strong>${seen}</strong> épisodes vus</p>
+      </div>
+      <a class="fab" href="#/add" aria-label="Ajouter une série">${icon(ICONS.plus)}</a>
+    </header>
+    <nav class="categories card" aria-label="Catégories">
+      ${CATEGORIES.map(({ key, label, icon: path }) => `
+        <a class="${key}" href="#/tab/${key}" aria-label="${label}" title="${label}" ${key === category.key ? 'aria-current="page"' : ''}>
+          ${icon(path)}<span>${count(key)}</span>
+        </a>`).join('')}
     </nav>
-    <h2 class="tab-title">${category.label} <span>(${inTab.length} ${inTab.length < 2 ? 'série' : 'séries'})</span></h2>
-    ${inTab.length === 0 ? `<p class="empty">${category.empty}</p>` : `
-      <ul class="shows">
-        ${inTab.map((show) => `
-          <li><a href="#/show/${show.id}">
+    <h2 class="tab-title">${category.label} <span>${inTab.length} ${inTab.length < 2 ? 'série' : 'séries'}</span></h2>
+    ${inTab.length === 0 ? `<p class="empty card">${category.empty}</p>` : `
+      <ul class="shows ${category.key}">
+        ${inTab.map((show, index) => `
+          <li style="--i: ${Math.min(index, 12)}"><a class="card show-row" href="#/show/${show.id}">
             ${poster(show.image_url)}
             <div class="show-info">
-              <div class="show-title">
-                <span class="show-name">${esc(show.name)}</span>
-                ${category.key === 'waiting' ? daysLeft(show) : ''}
-              </div>
-              ${progress(show)}
+              <div class="show-name">${esc(show.name)}</div>
+              <div class="progress-text">${show.seen} / ${show.aired} épisodes<br>${minutes(show)}</div>
+              ${category.key === 'waiting' ? `<span class="chip">Prochain : J-${show.next_airstamp ? daysUntil(show.next_airstamp) : '?'}</span>` : ''}
             </div>
+            ${ring(percent(show), 52, 4)}
           </a></li>`).join('')}
       </ul>`}`;
 }
@@ -122,12 +136,12 @@ function episodeDetails(episode, info) {
     </div>`;
 }
 
-function episodeRow(episode, aired, info) {
+function episodeRow(episode, aired, info, popped) {
   let date = 'Date inconnue';
   if (episode.airstamp) date = aired ? localDate(episode.airstamp) : `Diffusion le ${localDate(episode.airstamp)}`;
   return `
     <li class="episode ${aired ? '' : 'unaired'}">
-      <button class="check" data-episode="${episode.id}" aria-pressed="${episode.watched}" aria-label="Vu" ${aired ? '' : 'disabled'}></button>
+      <button class="check ${popped ? 'pop' : ''}" data-episode="${episode.id}" aria-pressed="${episode.watched}" aria-label="Vu" ${aired ? '' : 'disabled'}>${icon(ICONS.check)}</button>
       <button class="episode-main" data-details="${episode.id}" aria-expanded="${Boolean(info)}">
         <span class="episode-number">${episode.number}</span>
         <span class="episode-text">
@@ -145,37 +159,61 @@ async function renderShow(id) {
   const summary = htmlText(tvmazeShow?.summary);
   const isAired = (episode) => episode.airstamp !== null && episode.airstamp <= show.now;
   const toTick = (episodes) => episodes.filter((episode) => isAired(episode) && !episode.watched);
+  const seasonDone = (episodes) => episodes.some(isAired) && toTick(episodes).length === 0;
   const episodeInfo = new Map();
   const openEpisodes = new Set();
   let summaryOpen = false;
+  // One-shot effects for the next draw: the check that pops, the seasons that just got finished.
+  let popped = null;
+  let finished = new Set();
+  let shownPercent = percent(show);
 
   function draw(openSeasons) {
+    setAccent(show.category);
     const seasons = Map.groupBy(show.episodes, (episode) => episode.season);
+    const category = CATEGORIES.find(({ key }) => key === show.category);
+    const status = STATUS[show.status] ?? show.status;
     main.innerHTML = `
       ${backLink}
-      <div class="show-header">
+      <section class="card show-header ${show.category}">
         ${poster(show.image_url)}
         <div class="show-info">
           <h1>${esc(show.name)}</h1>
-          <div class="status">${esc(STATUS[show.status] ?? show.status ?? '')}</div>
-          ${progress(show)}
+          <span class="chip">${category.label}${status ? ` · ${esc(status)}` : ''}</span>
+          <div class="show-progress">
+            ${ring(percent(show), 68, 6)}
+            <p><strong>${show.seen} / ${show.aired}</strong><br>épisodes<br>${minutes(show)}</p>
+          </div>
         </div>
-      </div>
-      ${summary ? `<p class="show-summary ${summaryOpen ? 'open' : ''}">${esc(summary)}</p>` : ''}
+      </section>
+      ${summary ? `<button class="card show-summary ${summaryOpen ? 'open' : ''}" data-summary><span>${esc(summary)}</span></button>` : ''}
       <div class="actions">
         <button class="button" data-stop>${show.stopped ? 'Reprendre' : "J'arrête"}</button>
         <button class="link-button" data-remove>Retirer de ma liste</button>
       </div>
       ${[...seasons].map(([season, episodes]) => `
-        <details data-season="${season}" ${openSeasons.has(season) ? 'open' : ''}>
+        <details class="card season" data-season="${season}" ${openSeasons.has(season) ? 'open' : ''}>
           <summary>
-            <span>Saison ${season} · ${episodes.filter((episode) => episode.watched).length} / ${episodes.filter(isAired).length} vus</span>
-            ${toTick(episodes).length > 0 ? `<button class="button" data-season-all="${season}">Tout marquer vu</button>` : ''}
+            <span class="season-name">Saison ${season}</span>
+            <span class="season-count ${seasonDone(episodes) ? 'done' : ''} ${finished.has(season) ? 'glow' : ''}">${episodes.filter((episode) => episode.watched).length} / ${episodes.filter(isAired).length} vus</span>
+            ${toTick(episodes).length > 0 ? `<button class="button small" data-season-all="${season}">Tout marquer vu</button>` : ''}
           </summary>
           <ul class="episodes">
-            ${episodes.map((ep) => episodeRow(ep, isAired(ep), openEpisodes.has(ep.id) && episodeInfo.get(ep.id))).join('')}
+            ${episodes.map((ep) => episodeRow(ep, isAired(ep), openEpisodes.has(ep.id) && episodeInfo.get(ep.id), ep.id === popped)).join('')}
           </ul>
         </details>`).join('')}`;
+    const fill = main.querySelector('.show-header .ring-fill');
+    if (finished.size > 0) main.querySelector('.show-header .ring').classList.add('glow');
+    // The ring grows from the share shown before the redraw to the new one.
+    if (shownPercent !== percent(show)) {
+      const c = 2 * Math.PI * fill.r.baseVal.value;
+      const target = fill.getAttribute('stroke-dasharray');
+      fill.setAttribute('stroke-dasharray', `${(c * shownPercent) / 100} ${c}`);
+      requestAnimationFrame(() => requestAnimationFrame(() => fill.setAttribute('stroke-dasharray', target)));
+      shownPercent = percent(show);
+    }
+    popped = null;
+    finished = new Set();
   }
 
   const setWatched = (episodes, watched) =>
@@ -184,10 +222,12 @@ async function renderShow(id) {
   const redraw = () => draw(new Set([...main.querySelectorAll('details[open]')].map((details) => Number(details.dataset.season))));
 
   async function handle(target) {
+    const doneBefore = new Set([...Map.groupBy(show.episodes, (ep) => ep.season)].filter(([, eps]) => seasonDone(eps)).map(([season]) => season));
     if (target.dataset.episode) {
       const episode = show.episodes.find((ep) => ep.id === Number(target.dataset.episode));
       // Ticked right away; the redraw below, or the one after an error, sets the real state.
       target.setAttribute('aria-pressed', !episode.watched);
+      if (!episode.watched) popped = episode.id;
       await setWatched([episode], !episode.watched);
     } else if (target.dataset.details) {
       const episodeId = Number(target.dataset.details);
@@ -207,12 +247,16 @@ async function renderShow(id) {
       return;
     }
     // Reload so counts, category and watched dates come from the server.
-    if (!target.dataset.details) Object.assign(show, await api(`/shows/${show.id}`));
+    if (!target.dataset.details) {
+      Object.assign(show, await api(`/shows/${show.id}`));
+      finished = new Set([...Map.groupBy(show.episodes, (ep) => ep.season)]
+        .filter(([season, eps]) => seasonDone(eps) && !doneBefore.has(season)).map(([season]) => season));
+    }
     redraw();
   }
 
   main.onclick = (event) => {
-    const summaryText = event.target.closest('.show-summary');
+    const summaryText = event.target.closest('[data-summary]');
     if (summaryText) {
       summaryOpen = !summaryOpen;
       summaryText.classList.toggle('open', summaryOpen);
@@ -233,7 +277,7 @@ async function renderShow(id) {
 
 function resultRow(show, inList) {
   return `
-    <li class="result">
+    <li class="card result">
       ${poster(show.image?.medium)}
       <div class="show-info">
         <div class="show-name">${esc(show.name)}</div>
@@ -244,12 +288,13 @@ function resultRow(show, inList) {
 }
 
 async function renderAdd() {
+  setAccent('');
   const inList = new Set((await api('/shows')).map((show) => show.id));
   main.innerHTML = `
     ${backLink}
-    <div class="header"><h1>Ajouter une série</h1></div>
+    <header class="page-header"><h1>Ajouter une série</h1></header>
     <form class="search">
-      <input type="search" name="q" placeholder="Rechercher une série" autofocus>
+      <input class="card" type="search" name="q" placeholder="Rechercher une série" aria-label="Rechercher une série" autofocus>
     </form>
     <ul class="shows results"></ul>`;
   const results = main.querySelector('.results');
@@ -261,10 +306,10 @@ async function renderAdd() {
     try {
       const found = await tvmaze(`/search/shows?q=${encodeURIComponent(query)}`);
       results.innerHTML = found.length === 0
-        ? '<p class="empty">Rien ici.</p>'
+        ? '<p class="empty card">Rien ici.</p>'
         : found.map(({ show }) => resultRow(show, inList.has(show.id))).join('');
     } catch (error) {
-      results.innerHTML = `<p class="empty">Erreur : ${esc(error.message)}</p>`;
+      results.innerHTML = `<p class="empty card">Erreur : ${esc(error.message)}</p>`;
     }
   };
 
@@ -288,14 +333,23 @@ async function renderAdd() {
 
 // The logout link is Cloudflare Access's own, so it only works online.
 async function renderProfile() {
+  setAccent('');
   const { email } = await api('/me');
   main.innerHTML = `
-    ${sectionSwitch('profile')}
-    <section class="profile">
-      <p>Connecté avec <strong>${esc(email)}</strong>.</p>
-      <p>Une copie de tes séries et de tes tomes lus, au format SQL.</p>
-      <a class="button" href="/api/export" download>Télécharger mes données</a>
-      <p class="logout"><a href="/cdn-cgi/access/logout">Se déconnecter</a></p>
+    <header class="page-header"><h1>Profil</h1></header>
+    <section class="card profile-id">
+      <span class="avatar" aria-hidden="true">${esc(email[0].toUpperCase())}</span>
+      <div>
+        <p class="muted">Connecté avec</p>
+        <p class="email">${esc(email)}</p>
+      </div>
+    </section>
+    <section class="card menu">
+      <a href="/api/export" download>
+        ${icon(ICONS.download)}
+        <span><strong>Télécharger mes données</strong><small>Tes séries et tes tomes lus, au format SQL</small></span>
+      </a>
+      <a href="/cdn-cgi/access/logout">${icon(ICONS.logout)}<span>Se déconnecter</span></a>
     </section>`;
 }
 
@@ -309,9 +363,18 @@ const FOOTERS = {
 async function render() {
   const [, route, param] = location.hash.split('/');
   const category = (route === 'tab' && CATEGORIES.find(({ key }) => key === param)) || CATEGORIES[0];
+  const section = route === 'books' || route === 'profile' ? route : 'series';
   main.onclick = null;
-  footer.innerHTML = FOOTERS[route] ?? FOOTERS.series;
+  footer.innerHTML = FOOTERS[section];
+  document.body.dataset.screen = route === 'show' || route === 'add' ? 'detail' : section;
+  for (const link of tabbar.querySelectorAll('a')) {
+    if (link.dataset.section === section) link.setAttribute('aria-current', 'page');
+    else link.removeAttribute('aria-current');
+  }
   window.scrollTo(0, 0);
+  // Only the first draw of a page animates in; redraws after a tick don't.
+  main.dataset.enter = '';
+  setTimeout(() => delete main.dataset.enter, 500);
   try {
     if (route === 'show') await renderShow(Number(param));
     else if (route === 'add') await renderAdd();
@@ -319,7 +382,7 @@ async function render() {
     else if (route === 'profile') await renderProfile();
     else await renderHome(category);
   } catch (error) {
-    main.innerHTML = `<p class="empty">Erreur : ${esc(error.message)}</p>`;
+    main.innerHTML = `<p class="empty card">Erreur : ${esc(error.message)}</p>`;
   }
 }
 

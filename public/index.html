@@ -2,14 +2,31 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Maxdom</title>
   <link rel="icon" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400..800&display=swap">
   <link rel="stylesheet" href="/style.css">
   <script type="module" src="/app.js"></script>
 </head>
 <body>
   <main></main>
   <footer></footer>
+  <nav class="tabbar" aria-label="Sections">
+    <a href="#/" data-section="series">
+      <svg class="icon" viewBox="0 0 18 18" aria-hidden="true"><path d="M2 4.5h14v9.5H2zM6.5 16.5h5"/></svg>
+      Séries
+    </a>
+    <a href="#/books" data-section="books">
+      <svg class="icon" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 3.5h4.5a2 2 0 0 1 2 2V15a1.5 1.5 0 0 0-1.5-1.5H3zM15 3.5h-4.5a1 1 0 0 0-1 1M9.5 15a1.5 1.5 0 0 1 1.5-1.5h4v-10"/></svg>
+      Aquilon
+    </a>
+    <a href="#/profile" data-section="profile">
+      <svg class="icon" viewBox="0 0 18 18" aria-hidden="true"><path d="M9 3.5a3 3 0 1 0 0 6a3 3 0 1 0 0-6zM3.5 15.5c.8-2.6 2.9-4 5.5-4s4.7 1.4 5.5 4"/></svg>
+      Profil
+    </a>
+  </nav>
 </body>
 </html>
