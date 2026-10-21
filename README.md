@@ -28,7 +28,7 @@ Export the whole database, every account included (schema, migration history and
 
 ```sh
 npx wrangler d1 export maxdom --local --output=data/backup-YYYY-MM-DD.sql   # local database
-npm run db:backup                                                          # online database, into data/backup-<today>.sql
+npm run db:backup                                                          # online database, into data/backup-<date>-<time>.sql
 ```
 
 To restore one into an empty database, for example on a new machine, run the file as is. Don't run `npm run db:migrate` before: the export already creates the tables.

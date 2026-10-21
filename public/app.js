@@ -70,7 +70,7 @@ function ring(pct, size, stroke) {
   return `
     <svg class="ring" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" role="img" aria-label="${pct} % vu">
       <circle class="ring-track" cx="${size / 2}" cy="${size / 2}" r="${r}" stroke-width="${stroke}"/>
-      <circle class="ring-fill" cx="${size / 2}" cy="${size / 2}" r="${r}" stroke-width="${stroke}" stroke-dasharray="${(c * pct) / 100} ${c}" transform="rotate(-90 ${size / 2} ${size / 2})"/>
+      ${pct > 0 ? `<circle class="ring-fill" cx="${size / 2}" cy="${size / 2}" r="${r}" stroke-width="${stroke}" stroke-dasharray="${(c * pct) / 100} ${c}" transform="rotate(-90 ${size / 2} ${size / 2})"/>` : ''}
       <text x="50%" y="50%" dy="0.35em">${pct} %</text>
     </svg>`;
 }
@@ -146,12 +146,13 @@ function episodeDetails(episode, info) {
     </div>`;
 }
 
-function episodeRow(episode, aired, info, popped) {
+// A stopped show keeps its ticks but takes no new ones until it is resumed.
+function episodeRow(episode, aired, locked, info, popped) {
   let date = 'Date inconnue';
   if (episode.airstamp) date = aired ? localDate(episode.airstamp) : `Diffusion le ${localDate(episode.airstamp)}`;
   return `
     <li class="episode ${aired ? '' : 'unaired'}">
-      <button class="check${popped ? ' pop' : ''}" data-episode="${episode.id}" aria-pressed="${episode.watched}" aria-label="Vu" ${aired ? '' : 'disabled'}>${icon(ICONS.check)}</button>
+      <button class="check${popped ? ' pop' : ''}" data-episode="${episode.id}" aria-pressed="${episode.watched}" aria-label="Vu" ${aired && !(locked && !episode.watched) ? '' : 'disabled'}>${icon(ICONS.check)}</button>
       <button class="episode-main" data-details="${episode.id}" aria-expanded="${Boolean(info)}">
         <span class="episode-number">${episode.number}</span>
         <span class="episode-text">
@@ -179,6 +180,10 @@ async function renderShow(id) {
   function draw(openSeasons) {
     setAccent(show.category);
     const seasons = Map.groupBy(show.episodes, (episode) => episode.season);
+    // Only a show being watched can be stopped: not one never started ("À voir") nor one
+    // finished ("Terminées"). A stopped one can always be resumed.
+    const stopped = show.category === 'stopped';
+    const stoppable = stopped || show.category === 'in_progress' || show.category === 'waiting';
     const category = CATEGORIES.find(({ key }) => key === show.category);
     const status = STATUS[show.status] ?? show.status;
     patch(main, `
@@ -195,8 +200,9 @@ async function renderShow(id) {
         </div>
       </section>
       ${summary ? `<button class="card show-summary ${summaryOpen ? 'open' : ''}" data-summary><span>${esc(summary)}</span></button>` : ''}
+      ${stopped ? '<p class="muted hint">Reprends la série pour cocher de nouveaux épisodes.</p>' : ''}
       <div class="actions">
-        <button class="button" data-stop>${show.stopped ? 'Reprendre' : "J'arrête"}</button>
+        ${stoppable ? `<button class="button" data-stop>${stopped ? 'Reprendre' : "J'arrête"}</button>` : ''}
         <button class="link-button" data-remove>Retirer de ma liste</button>
       </div>
       ${[...seasons].map(([season, episodes]) => `
@@ -204,10 +210,10 @@ async function renderShow(id) {
           <summary>
             <span class="season-name">Saison ${season}</span>
             <span class="season-count ${seasonDone(episodes) ? 'done' : ''}">${episodes.filter((episode) => episode.watched).length} / ${episodes.filter(isAired).length} vus</span>
-            ${toTick(episodes).length > 0 ? `<button class="button small" data-season-all="${season}">Tout marquer vu</button>` : ''}
+            ${!stopped && toTick(episodes).length > 0 ? `<button class="button small" data-season-all="${season}">Tout marquer vu</button>` : ''}
           </summary>
           <ul class="episodes">
-            ${episodes.map((ep) => episodeRow(ep, isAired(ep), openEpisodes.has(ep.id) && episodeInfo.get(ep.id), ep.id === popped)).join('')}
+            ${episodes.map((ep) => episodeRow(ep, isAired(ep), stopped, openEpisodes.has(ep.id) && episodeInfo.get(ep.id), ep.id === popped)).join('')}
           </ul>
         </details>`).join('')}`);
     popped = null;

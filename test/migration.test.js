@@ -24,3 +24,24 @@ describe('0004_users', () => {
     ]);
   });
 });
+
+describe('0005_unstop_unwatched', () => {
+  it('clears the stopped flag of shows with nothing watched', () => {
+    const db = new DatabaseSync(':memory:');
+    for (const file of readdirSync('migrations').sort().filter((file) => file < '0005')) db.exec(readFileSync(`migrations/${file}`, 'utf8'));
+    db.exec(`
+      INSERT INTO users (id, email, created_at) VALUES (2, 'a@example.com', 'x');
+      INSERT INTO shows (id, name) VALUES (7, 'Started'), (8, 'Never started');
+      INSERT INTO episodes (id, show_id, season, number) VALUES (1, 7, 1, 1), (2, 8, 1, 1);
+      INSERT INTO user_shows VALUES (1, 7, 1, 'x'), (1, 8, 1, 'x'), (2, 7, 1, 'x');
+      INSERT INTO watched VALUES (1, 1, 'w');`);
+
+    db.exec(readFileSync('migrations/0005_unstop_unwatched.sql', 'utf8'));
+
+    expect(db.prepare('SELECT user_id, show_id, stopped FROM user_shows ORDER BY user_id, show_id').all()).toEqual([
+      { user_id: 1, show_id: 7, stopped: 1 },
+      { user_id: 1, show_id: 8, stopped: 0 },
+      { user_id: 2, show_id: 7, stopped: 0 },
+    ]);
+  });
+});
