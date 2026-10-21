@@ -53,6 +53,7 @@ describe('identify', () => {
       'not.a.token',
       'garbage',
       await sign(k1, claims({ exp: Math.floor(Date.now() / 1000) - 1 })),
+      await sign(k1, claims({ exp: undefined })),
       forged,
       await sign(k1, claims({ aud: ['other'] })),
       await sign(k1, claims({ email: undefined })),

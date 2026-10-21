@@ -15,14 +15,14 @@ async function accessKey(teamDomain, kid) {
 
 // The email Cloudflare Access logged in, read from its signed token. DEV_EMAIL stands in
 // for it under `wrangler dev`, where there is no Access; it must never be set in production.
-export async function identify(request, env, now = Date.now()) {
+export async function identify(request, env) {
   if (env.DEV_EMAIL) return env.DEV_EMAIL.toLowerCase();
   try {
     const [header, payload, signature] = request.headers.get('cf-access-jwt-assertion').split('.');
     const key = await accessKey(env.ACCESS_TEAM_DOMAIN, decodeJson(header).kid);
     if (!key || !(await crypto.subtle.verify(ALGORITHM, key, decode(signature), new TextEncoder().encode(`${header}.${payload}`)))) return null;
     const { aud, exp, email } = decodeJson(payload);
-    if (![aud].flat().includes(env.ACCESS_AUD) || exp * 1000 <= now || typeof email !== 'string') return null;
+    if (![aud].flat().includes(env.ACCESS_AUD) || typeof exp !== 'number' || exp * 1000 <= Date.now() || typeof email !== 'string') return null;
     return email.toLowerCase();
   } catch {
     return null;
