@@ -364,7 +364,7 @@ summary .button { padding: 4px 12px; font-size: 14px; font-weight: 400; }
   border: 2px solid var(--colour);
   border-radius: 50%;
   background: var(--bg);
-  color: var(--ink);
+  color: var(--colour);
   font: inherit;
   font-size: 9px;
   font-weight: 600;
