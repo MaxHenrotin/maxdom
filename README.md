@@ -1,6 +1,6 @@
 # Maxdom
 
-A small personal tracker for the TV series I watch and the Chroniques d'Aquilon comics I read. The series list started from my TV Time history. It runs on Cloudflare Workers and D1, with show data from [TVmaze](https://www.tvmaze.com).
+A small tracker for the TV series I watch and the Chroniques d'Aquilon comics I read, open to friends who want their own list. My series list started from my TV Time history. It runs on Cloudflare Workers and D1, with show data from [TVmaze](https://www.tvmaze.com).
 
 Requires Node 22 or later.
 
@@ -8,26 +8,36 @@ Requires Node 22 or later.
 
 ```sh
 npm install
+echo "DEV_EMAIL=you@example.com" > .dev.vars
 npm run dev         # http://localhost:8787
 ```
 
+There is no Cloudflare Access in local development, so the Worker takes the account from `DEV_EMAIL` in `.dev.vars` (ignored by git). Use `max.henrotin@gmail.com` to see my list. Never set `DEV_EMAIL` in `wrangler.jsonc` or in the Cloudflare dashboard: it turns the login check off.
+
 The data lives in the local D1 database that wrangler keeps under `.wrangler/state/`. That folder is ignored by git and it is the only copy of my list, including the corrections I made by hand after the import. Deleting `.wrangler/` deletes the list, so back it up first.
+
+## Accounts
+
+Anyone who gets through Cloudflare Access has an account, created on their first visit and identified by the email they logged in with. The shows, episodes and Aquilon volumes are shared, so a show two people follow is stored and refreshed once. Following a show, ticking episodes and reading volumes belong to each account, and nobody sees anyone else's list.
+
+The migration that added accounts (`0004_users.sql`) gave everything already in the database to `max.henrotin@gmail.com`.
 
 ## Backing up and restoring
 
-Export the whole database (schema, migration history and data) to a SQL file:
+Export the whole database, every account included (schema, migration history and data), to a SQL file:
 
 ```sh
-npx wrangler d1 export maxdom --local --output=data/backup-YYYY-MM-DD.sql
+npx wrangler d1 export maxdom --local --output=data/backup-YYYY-MM-DD.sql   # local database
+npm run db:backup                                                          # online database, into data/backup-<today>.sql
 ```
 
-The "Télécharger ma base" button on the Profil page gives the same kind of file from the browser, which also works once the app is online. It is built by the Worker (`GET /api/export`) and restores the same way.
-
-To restore it into an empty local database, for example on a new machine, run the file as is. Don't run `npm run db:migrate` before: the export already creates the tables.
+To restore one into an empty database, for example on a new machine, run the file as is. Don't run `npm run db:migrate` before: the export already creates the tables.
 
 ```sh
 npx wrangler d1 execute maxdom --local --file=data/backup-YYYY-MM-DD.sql
 ```
+
+The "Télécharger mes données" button on the Profil page is different: it only holds the logged-in account, with the shows it follows and their episodes. It is made of `INSERT OR IGNORE` statements, so it restores the same way into a Maxdom database that already has its tables and other accounts, without touching them.
 
 `data/` is ignored by git because it holds personal data, so keep a copy of the backups somewhere else too.
 
@@ -53,8 +63,6 @@ The list was created once from my TV Time GDPR export by a script that has since
 
 ## Going online later
 
-The app has no authentication yet. Put it behind something like Cloudflare Access before deploying it, or anyone with the URL can read and edit the list.
-
 The remote database is filled from an export of the local one. The export already contains the schema and the migration history, so there is no `migrations apply` step.
 
 ```sh
@@ -64,3 +72,7 @@ npx wrangler d1 export maxdom --local --output=data/backup-YYYY-MM-DD.sql
 npx wrangler d1 execute maxdom --remote --file=data/backup-YYYY-MM-DD.sql
 npx wrangler deploy
 ```
+
+Then put the Worker behind Cloudflare Access. In the dashboard, under the Worker's Settings > Domains & Routes, enable Cloudflare Access on the `workers.dev` URL. Give the Access application the One-time PIN login and a policy that allows everyone, so friends can get in with just their email. The setup shows the team domain (`https://<team>.cloudflareaccess.com`) and the application's audience tag: copy them into `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` in `wrangler.jsonc`, then deploy again. Until both are set, the Worker refuses every API request.
+
+The Worker checks the token Access adds to each request (`Cf-Access-Jwt-Assertion`) rather than using `ctx.access`, because Cloudflare doesn't pass `ctx.access` to a Worker that serves static assets.

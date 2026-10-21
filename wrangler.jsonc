@@ -7,5 +7,7 @@
     // database_id is a placeholder until `wrangler d1 create maxdom` at deploy time
     { "binding": "DB", "database_name": "maxdom", "database_id": "local" }
   ],
-  "triggers": { "crons": ["0 5 * * *", "0 6 * * 1"] }
+  "triggers": { "crons": ["0 5 * * *", "0 6 * * 1"] },
+  // Filled at deploy time from the Cloudflare Access application. Left empty, every API request is refused.
+  "vars": { "ACCESS_TEAM_DOMAIN": "", "ACCESS_AUD": "" }
 }

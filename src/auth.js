@@ -7,7 +7,7 @@ const decodeJson = (part) => JSON.parse(new TextDecoder().decode(decode(part)));
 let keys = new Map();
 async function accessKey(teamDomain, kid) {
   if (!keys.has(kid)) {
-    const { keys: jwks } = await (await fetch(`https://${teamDomain}/cdn-cgi/access/certs`)).json();
+    const { keys: jwks } = await (await fetch(`${teamDomain}/cdn-cgi/access/certs`)).json();
     keys = new Map(await Promise.all(jwks.map(async (jwk) => [jwk.kid, await crypto.subtle.importKey('jwk', jwk, ALGORITHM, false, ['verify'])])));
   }
   return keys.get(kid);

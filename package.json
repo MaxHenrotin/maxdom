@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "wrangler dev",
     "test": "vitest run",
-    "db:migrate": "wrangler d1 migrations apply maxdom --local"
+    "db:migrate": "wrangler d1 migrations apply maxdom --local",
+    "db:backup": "wrangler d1 export maxdom --remote --output=data/backup-$(date +%F).sql"
   },
   "devDependencies": {
     "vitest": "^5.0.5",
