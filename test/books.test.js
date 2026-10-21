@@ -24,7 +24,7 @@ describe('refreshBooks', () => {
   it('saves the deduplicated catalogue and keeps what was read', async () => {
     const db = createD1();
     await db.prepare("INSERT INTO books (id, series, volume, title, published) VALUES ('elfes-t36', 'Elfes', 36, 'Old title', '2026-09-24')").run();
-    await db.prepare("INSERT INTO books_read VALUES ('elfes-t36', '2026-10-01T10:00:00.000Z')").run();
+    await db.prepare("INSERT INTO books_read VALUES (1, 'elfes-t36', '2026-10-01T10:00:00.000Z')").run();
     stubSite({ elfes: fixture('elfes-page-1.html') });
 
     await refreshBooks({ DB: db });
@@ -66,9 +66,9 @@ describe('scheduled', () => {
 
 describe('books API', () => {
   let db;
-  const call = (path, init) => worker.fetch(new Request(`http://localhost${path}`, init), { DB: db });
+  const call = (path, init, email = 'max.henrotin@gmail.com') => worker.fetch(new Request(`http://localhost${path}`, init), { DB: db, DEV_EMAIL: email });
   const get = async (path) => (await call(path)).json();
-  const post = (path, body) => call(path, { method: 'POST', body: JSON.stringify(body) });
+  const post = (path, body, email) => call(path, { method: 'POST', body: JSON.stringify(body) }, email);
   const readIds = async () => (await db.prepare('SELECT book_id FROM books_read ORDER BY book_id').all()).results.map((r) => r.book_id);
 
   beforeEach(async () => {
@@ -76,7 +76,7 @@ describe('books API', () => {
     await db.prepare(`INSERT INTO books (id, series, volume, title, published) VALUES
       ('n1', 'Nains', 1, 'N', '2020-01-01'), ('e9', 'Elfes', 9, 'E', '2020-01-01'),
       ('m1', 'Mages', 1, 'M', '2999-01-01'), ('mages-t04', 'Mages', 4, 'Arundill', '2020-08-26')`).run();
-    await db.prepare("INSERT INTO books_read VALUES ('e9', '2026-10-01T10:00:00.000Z')").run();
+    await db.prepare("INSERT INTO books_read VALUES (1, 'e9', '2026-10-01T10:00:00.000Z')").run();
   });
 
   it('lists the volumes in global order with their read state', async () => {
@@ -98,6 +98,14 @@ describe('books API', () => {
     await post('/api/books/read', { bookIds: ['e9'], read: false });
     expect(await readIds()).toEqual(['n1']);
     expect((await post('/api/books/read', { bookIds: 'n1', read: true })).status).toBe(400);
+  });
+
+  it('keeps read ticks per account', async () => {
+    await post('/api/books/read', { bookIds: ['n1'], read: true }, 'a@example.com');
+    await post('/api/books/read', { bookIds: ['e9'], read: false }, 'a@example.com');
+    const read = async (email) => (await (await call('/api/books', undefined, email)).json()).filter((b) => b.read_at).map((b) => b.id);
+    expect(await read('a@example.com')).toEqual(['n1']);
+    expect(await read('max.henrotin@gmail.com')).toEqual(['e9']);
   });
 
   it('returns the summary of a known volume', async () => {

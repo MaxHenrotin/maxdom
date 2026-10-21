@@ -28,7 +28,7 @@ describe('refresh', () => {
 
   it('saves the shows fetched before a TVmaze error', async () => {
     const db = createD1();
-    await db.prepare("INSERT INTO shows (id, name, added_at, tvmaze_updated) VALUES (1, 'A', 'x', 0), (2, 'B', 'x', 5)").run();
+    await db.prepare("INSERT INTO shows (id, name, tvmaze_updated) VALUES (1, 'A', 0), (2, 'B', 5)").run();
     const json = (body, status = 200) => new Response(JSON.stringify(body), { status });
     vi.stubGlobal('fetch', vi.fn(async (url) => {
       if (url.endsWith('/updates/shows?since=week')) return json({ 1: 100, 2: 100 });

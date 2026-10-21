@@ -53,16 +53,17 @@ export async function refreshBooks(env) {
 
 // A volume is out once its publication date is reached. Deduplicating again here hides a
 // second edition that a partial scrape may have stored, since volumes are never deleted.
-export async function listBooks(db, now) {
+export async function listBooks(db, now, user) {
   const { results } = await db
-    .prepare('SELECT b.*, r.read_at FROM books b LEFT JOIN books_read r ON r.book_id = b.id')
+    .prepare('SELECT b.*, r.read_at FROM books b LEFT JOIN books_read r ON r.book_id = b.id AND r.user_id = ?1')
+    .bind(user.id)
     .all();
   const today = now.slice(0, 10);
   return Response.json(sortBooks(dedupeEditions(results)).map((book) => ({ ...book, released: book.published <= today })));
 }
 
 // Only volumes that are out can be ticked, whatever the client sends.
-export async function setRead(db, now, { bookIds, read }) {
+export async function setRead(db, now, user, { bookIds, read }) {
   if (!Array.isArray(bookIds) || !bookIds.every((id) => typeof id === 'string') || typeof read !== 'boolean') {
     return error(400, 'expected { bookIds: string[], read: boolean }');
   }
@@ -70,13 +71,13 @@ export async function setRead(db, now, { bookIds, read }) {
   if (read) {
     await db
       .prepare(`
-        INSERT OR IGNORE INTO books_read (book_id, read_at)
-        SELECT id, ?2 FROM books
+        INSERT OR IGNORE INTO books_read (user_id, book_id, read_at)
+        SELECT ?4, id, ?2 FROM books
         WHERE id IN (SELECT value FROM json_each(?1)) AND published <= ?3`)
-      .bind(ids, now, now.slice(0, 10))
+      .bind(ids, now, now.slice(0, 10), user.id)
       .run();
   } else {
-    await db.prepare('DELETE FROM books_read WHERE book_id IN (SELECT value FROM json_each(?1))').bind(ids).run();
+    await db.prepare('DELETE FROM books_read WHERE user_id = ?2 AND book_id IN (SELECT value FROM json_each(?1))').bind(ids, user.id).run();
   }
   return Response.json({ ok: true });
 }

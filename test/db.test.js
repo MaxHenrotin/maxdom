@@ -9,7 +9,7 @@ describe('upsertShowStatements', () => {
   it('removes episodes TVmaze no longer lists, with their watched rows', async () => {
     const db = createD1();
     await db.batch(upsertShowStatements(db, show, [episode(1, 1), episode(2, 2)]));
-    await db.prepare("INSERT INTO watched VALUES (2, 'x')").run();
+    await db.prepare("INSERT INTO watched VALUES (1, 2, 'x')").run();
 
     await db.batch(upsertShowStatements(db, show, [episode(1, 1), episode(3, 2)]));
 
