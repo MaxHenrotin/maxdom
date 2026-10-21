@@ -14,7 +14,7 @@ npm run dev         # http://localhost:8787
 
 There is no Cloudflare Access in local development, so the Worker takes the account from `DEV_EMAIL` in `.dev.vars` (ignored by git). Use `max.henrotin@gmail.com` to see my list. Never set `DEV_EMAIL` in `wrangler.jsonc` or in the Cloudflare dashboard: it turns the login check off.
 
-The data lives in the local D1 database that wrangler keeps under `.wrangler/state/`. That folder is ignored by git and it is the only copy of my list, including the corrections I made by hand after the import. Deleting `.wrangler/` deletes the list, so back it up first.
+Since the app went online (https://maxdom.maxhenrotin.workers.dev), the online D1 database is the reference. The local one, which wrangler keeps under `.wrangler/state/` (ignored by git), is a copy of it from the day of the deploy, used for development only. To work on fresh data, restore a `npm run db:backup` file into it (see below).
 
 ## Accounts
 
@@ -61,9 +61,9 @@ curl "localhost:8787/cdn-cgi/local/scheduled?cron=0+6+*+*+1"
 
 The list was created once from my TV Time GDPR export by a script that has since been deleted, along with the export and the generated seed (the script is in the git history, under `scripts/`). The local database, with the corrections I made by hand afterwards, is the only reference.
 
-## Going online later
+## Deploying
 
-The remote database is filled from an export of the local one. The export already contains the schema and the migration history, so there is no `migrations apply` step.
+The app was first deployed like this. The remote database is filled from an export of the local one. The export already contains the schema and the migration history, so there is no `migrations apply` step.
 
 ```sh
 npx wrangler login
@@ -73,6 +73,8 @@ npx wrangler d1 execute maxdom --remote --file=data/backup-YYYY-MM-DD.sql
 npx wrangler deploy
 ```
 
-Then put the Worker behind Cloudflare Access. In the dashboard, under the Worker's Settings > Domains & Routes, enable Cloudflare Access on the `workers.dev` URL. Give the Access application the One-time PIN login and a policy that allows everyone, so friends can get in with just their email. The setup shows the team domain (`https://<team>.cloudflareaccess.com`) and the application's audience tag: copy them into `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` in `wrangler.jsonc`, then deploy again. Until both are set, the Worker refuses every API request.
+Then put the Worker behind Cloudflare Access, from the Worker's Access tab in the Cloudflare dashboard (the first time, it asks to set up a Zero Trust organization on the free plan). The rest is done in the Zero Trust dashboard (one.dash.cloudflare.com): add One-time PIN under Integrations > Identity providers, and in Access > Applications give the Worker's application a policy that allows everyone, so friends can get in with just their email. Copy the team domain (`https://<team>.cloudflareaccess.com`) and the application's audience (AUD) tag into `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` in `wrangler.jsonc`, then deploy again. Until both are set, the Worker refuses every API request. Renaming the application keeps its AUD tag; deleting and recreating it doesn't.
+
+After a code change, `npx wrangler deploy` puts it online. A new migration has to be applied to the online database first, with `npx wrangler d1 migrations apply maxdom --remote`, after a `npm run db:backup`.
 
 The Worker checks the token Access adds to each request (`Cf-Access-Jwt-Assertion`) rather than using `ctx.access`, because Cloudflare doesn't pass `ctx.access` to a Worker that serves static assets.
