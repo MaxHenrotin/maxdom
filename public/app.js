@@ -355,8 +355,10 @@ const FOOTERS = {
 
 // Each page swaps in its content once its data has arrived. The footer, the tab bar and the
 // scroll position change in the same frame, so the old page never shows the new page's state.
-async function render() {
-  const [, route, param] = location.hash.split('/');
+// The page the last render showed, so a switch between two series categories can be told apart.
+let shownPage = null;
+
+async function update(route, param) {
   const category = (route === 'tab' && CATEGORIES.find(({ key }) => key === param)) || CATEGORIES[0];
   const section = route === 'books' || route === 'profile' ? route : 'series';
   main.onclick = null;
@@ -371,12 +373,24 @@ async function render() {
   }
   footer.innerHTML = FOOTERS[section];
   document.body.dataset.screen = route === 'show' || route === 'add' ? 'detail' : section;
+  tabbar.style.setProperty('--index', ['series', 'books', 'profile'].indexOf(section));
   for (const link of tabbar.querySelectorAll('a')) {
     if (link.dataset.section === section) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
   }
   // Aquilon scrolls itself to the first unread volume.
   if (route !== 'books') window.scrollTo(0, 0);
+}
+
+// The browser keeps a picture of the old page on screen until the new one is ready, then
+// blends them (style.css); between two categories only the list blends, so the bar stays sharp.
+function render() {
+  const [, route, param] = location.hash.split('/');
+  const page = route === 'tab' || !route ? 'home' : route;
+  document.documentElement.classList.toggle('category-switch', page === 'home' && shownPage === 'home');
+  shownPage = page;
+  if (document.startViewTransition) document.startViewTransition(() => update(route, param));
+  else update(route, param);
 }
 
 // Opened straight on a show or the add page, "Retour" falls back to its href (home).
