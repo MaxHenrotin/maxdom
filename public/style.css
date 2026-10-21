@@ -114,27 +114,6 @@ footer { padding: 28px 16px calc(120px + env(safe-area-inset-bottom)); color: va
 
 .muted { margin: 0; color: var(--muted); font-size: 13px; }
 
-/* Animations: entering a page, ticking, and a short glow when something is finished. */
-@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-
-@keyframes pop { 0% { transform: scale(0.7); } 55% { transform: scale(1.18); } 100% { transform: scale(1); } }
-
-@keyframes glow {
-  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); transform: scale(1); }
-  35% { transform: scale(1.08); }
-  100% { box-shadow: 0 0 0 16px transparent; transform: scale(1); }
-}
-
-main[data-enter] > * { animation: rise 260ms ease-out both; }
-
-main[data-enter] .shows li { animation: rise 280ms ease-out both; animation-delay: calc(var(--i) * 30ms); }
-
-.glow { animation: glow 700ms ease-out; }
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before { animation: none !important; transition: none !important; }
-}
-
 .tabbar {
   position: fixed;
   z-index: 10;
@@ -164,7 +143,6 @@ main[data-enter] .shows li { animation: rise 280ms ease-out both; animation-dela
   font-size: 14px;
   font-weight: 700;
   text-decoration: none;
-  transition: background-color 250ms ease, color 250ms ease;
 }
 
 .tabbar a[aria-current="page"] { background: var(--accent-soft); color: var(--accent-text); }
@@ -186,7 +164,6 @@ h1 { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 800; letter-spac
   border-radius: 24px;
   background: var(--accent);
   color: var(--on-accent);
-  transition: background-color 250ms ease, color 250ms ease;
 }
 
 .fab .icon { width: 20px; height: 20px; stroke-width: 2.2; }
@@ -212,7 +189,6 @@ h1 { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 800; letter-spac
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
-  transition: background-color 250ms ease, color 250ms ease;
 }
 
 .button.small { height: 36px; padding: 0 12px; border-radius: 12px; font-size: 13px; }
@@ -250,7 +226,6 @@ h1 { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 800; letter-spac
   font-size: 12px;
   font-weight: 700;
   text-decoration: none;
-  transition: background-color 220ms ease, color 220ms ease;
 }
 
 .categories a[aria-current="page"] { background: var(--category); color: var(--on-category); }
@@ -275,7 +250,7 @@ h1 { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 800; letter-spac
 
 .ring-track { fill: none; stroke: var(--track); }
 
-.ring-fill { fill: none; stroke: var(--category); stroke-linecap: round; transition: stroke-dasharray 450ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.ring-fill { fill: none; stroke: var(--category); stroke-linecap: round; }
 
 .ring text { fill: var(--ink); font-size: 11px; font-weight: 800; text-anchor: middle; }
 
@@ -338,12 +313,11 @@ summary::-webkit-details-marker { display: none; }
   border-right: 2px solid var(--muted);
   border-bottom: 2px solid var(--muted);
   transform: rotate(-45deg);
-  transition: transform 200ms ease;
 }
 
 details[open] .season-name::before { transform: rotate(45deg); }
 
-.season-count { padding: 2px 8px; border-radius: 9px; color: var(--muted); font-size: 13px; transition: background-color 250ms ease, color 250ms ease; }
+.season-count { padding: 2px 8px; border-radius: 9px; color: var(--muted); font-size: 13px; }
 
 .season-count.done { background: var(--accent-soft); color: var(--accent-text); font-weight: 700; }
 
@@ -365,12 +339,9 @@ summary .button { margin-left: auto; }
   border-radius: 50%;
   color: transparent;
   stroke-width: 2.4;
-  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
 }
 
 .check[aria-pressed="true"] .icon { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
-
-.check.pop .icon { animation: pop 320ms ease-out; }
 
 .check:disabled { opacity: 0.45; cursor: default; }
 
@@ -473,10 +444,7 @@ summary .button { margin-left: auto; }
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
-  transition: transform 180ms ease;
 }
-
-.node:active { transform: scale(0.92); }
 
 .node.read { background: var(--colour); color: var(--on-colour); }
 
@@ -484,34 +452,17 @@ summary .button { margin-left: auto; }
 
 .node.unreleased { border-width: 2px; border-style: dashed; background: var(--bg); color: var(--muted); opacity: 0.6; }
 
-.book-row.open { overflow: hidden; transition: height 0.45s ease; }
+.book-row.open { height: auto; padding-bottom: 10px; }
 
-.book-row.growing { height: 46px; }
-
-.book-row.settled { height: auto; }
-
-.shell {
-  position: absolute;
+.book-card {
+  --category: var(--colour);
+  position: relative;
+  padding: 16px;
   border: 2px solid color-mix(in srgb, var(--colour) 45%, transparent);
+  border-radius: 24px;
   background: var(--card);
   box-shadow: 0 12px 32px var(--shadow);
-  transition: all 0.45s ease;
 }
-
-/* The shell starts and ends as the volume's circle. */
-.growing .shell {
-  top: 7px;
-  left: calc(44px + (var(--col) + 0.5) * (100% - 44px) / 7 - 16px);
-  width: 32px;
-  height: 32px;
-  border-radius: 16px;
-}
-
-.settled .shell { inset: 0 0 10px; border-radius: 24px; }
-
-.book-card { --category: var(--colour); position: relative; margin-bottom: 10px; padding: 16px; transition: opacity 0.2s; }
-
-.hidden .book-card { opacity: 0; }
 
 .book-head { display: flex; gap: 14px; }
 
@@ -538,7 +489,6 @@ summary .button { margin-left: auto; }
   font-size: 15px;
   font-weight: 800;
   cursor: pointer;
-  transition: background-color 200ms ease, color 200ms ease;
 }
 
 .read-button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-text); }

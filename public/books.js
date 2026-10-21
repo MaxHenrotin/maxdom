@@ -44,7 +44,7 @@ function node(book) {
 }
 
 // summary is undefined while it loads, '' when there is none.
-function card(book, books, summary, glowing) {
+function card(book, books, summary) {
   const { short, name } = SERIES[series(book)];
   const sameSeries = books.filter((other) => other.series === book.series).sort((a, b) => a.volume - b.volume);
   const index = sameSeries.indexOf(book);
@@ -62,7 +62,7 @@ function card(book, books, summary, glowing) {
           <div class="muted">${book.released ? 'Paru' : 'Paraît'} le ${frenchDate(book.published)}</div>
         </div>
       </div>
-      <button class="read-button ${glowing ? 'glow' : ''}" data-read aria-pressed="${Boolean(book.read_at)}" ${book.released ? '' : 'disabled'}>
+      <button class="read-button" data-read aria-pressed="${Boolean(book.read_at)}" ${book.released ? '' : 'disabled'}>
         ${book.read_at ? icon(ICONS.check) : ''}${label}
       </button>
       ${summary === undefined ? '<p class="show-summary loading"></p>' : summary ? `<button class="show-summary" data-summary><span>${esc(summary)}</span></button>` : ''}
@@ -73,47 +73,23 @@ function card(book, books, summary, glowing) {
     </div>`;
 }
 
-// The open card grows out of its circle: the shell's box and the row's height run from
-// the circle's size (.growing in style.css) to the card's, then the content fades in.
-// Closing plays it backwards.
-const GROW_MS = 450;
-const FADE_IN_AT_MS = 380;
-const FADE_OUT_MS = 150;
-
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const nextFrame = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-
-// Transitions need pixel sizes at both ends; once open, the card sizes itself so the summary can expand.
-function pinToCard(row) {
-  const box = { left: '0px', top: '0px', width: `${row.clientWidth}px`, height: `${row.scrollHeight - 10}px`, borderRadius: '24px' };
-  Object.assign(row.querySelector('.shell').style, box);
-  row.style.height = `${row.scrollHeight}px`;
-}
-
-function unpin(row) {
-  row.querySelector('.shell').removeAttribute('style');
-  row.style.height = '';
-}
-
 export async function renderBooks(main) {
-  setAccent('');
   let books = await api('/books');
   const summaries = new Map();
   let openId = null;
-  let busy = false;
-  // The volume just ticked as read lights up on the next draw.
-  let glowId = null;
 
-  const openRow = () => main.querySelector('.book-row.open');
   // render() replaces main.onclick when another page opens; a late redraw must not land on it.
   const onPage = () => main.onclick === onClick;
 
-  function draw({ growing = false } = {}) {
+  // The open volume's card takes the place of its circle, in the colour of its series.
+  function draw() {
     if (!onPage()) return;
     const span = spans(books);
     const released = books.filter((book) => book.released).length;
     const read = books.filter((book) => book.read_at).length;
+    const open = books.find((book) => book.id === openId);
     let year = null;
+    setAccent(open ? `series-${series(open)}` : '');
     main.innerHTML = `
       <header class="page-header">
         <div>
@@ -127,43 +103,10 @@ export async function renderBooks(main) {
           const bookYear = book.published.slice(0, 4);
           const label = bookYear === year ? '' : `<span class="year">${bookYear}</span>`;
           year = bookYear;
-          if (book.id !== openId) return `<div class="book-row">${label}${branches(span, row)}${node(book)}</div>`;
-          return `
-            <div class="book-row open ${growing ? 'growing hidden' : 'settled'}" style="${at(series(book))}">
-              ${label}${branches(span, row)}
-              <div class="shell"></div>
-              ${card(book, books, summaries.get(book.id), book.id === glowId)}
-            </div>`;
+          const content = book === open ? card(book, books, summaries.get(book.id)) : node(book);
+          return `<div class="book-row ${book === open ? 'open' : ''}" style="${at(series(book))}">${label}${branches(span, row)}${content}</div>`;
         }).join('')}
       </div>`;
-    glowId = null;
-  }
-
-  async function grow() {
-    const row = openRow();
-    await nextFrame();
-    pinToCard(row);
-    row.classList.remove('growing');
-    await wait(FADE_IN_AT_MS);
-    row.classList.remove('hidden');
-    await wait(GROW_MS - FADE_IN_AT_MS);
-    unpin(row);
-    row.classList.add('settled');
-  }
-
-  async function shrink() {
-    const row = openRow();
-    if (!row) return;
-    pinToCard(row);
-    row.classList.remove('settled');
-    row.classList.add('hidden');
-    await wait(FADE_OUT_MS);
-    unpin(row);
-    row.classList.add('growing');
-    await wait(GROW_MS);
-    openId = null;
-    setAccent('');
-    draw();
   }
 
   // The card opens before its summary arrives: the summary is cut to four lines, so a
@@ -171,7 +114,7 @@ export async function renderBooks(main) {
   async function loadSummary(id) {
     const summary = await api(`/books/${id}/summary`).then((data) => data.summary, () => '');
     summaries.set(id, summary);
-    const slot = onPage() && openId === id && openRow().querySelector('.show-summary.loading');
+    const slot = onPage() && openId === id && main.querySelector('.book-row.open .show-summary.loading');
     if (!slot) return;
     if (summary) {
       slot.outerHTML = `<button class="show-summary" data-summary><span>${esc(summary)}</span></button>`;
@@ -180,13 +123,11 @@ export async function renderBooks(main) {
     }
   }
 
-  async function open(id) {
-    await shrink();
+  // null closes the open card.
+  function open(id) {
     openId = id;
-    setAccent(`series-${series(books.find((book) => book.id === id))}`);
-    draw({ growing: true });
-    if (!summaries.has(id)) loadSummary(id);
-    await grow();
+    draw();
+    if (id && !summaries.has(id)) loadSummary(id);
   }
 
   async function toggleRead(button) {
@@ -195,29 +136,21 @@ export async function renderBooks(main) {
     try {
       await api('/books/read', { method: 'POST', body: { bookIds: [book.id], read: !book.read_at } });
       books = await api('/books');
-      if (!book.read_at) glowId = book.id;
     } catch (error) {
       alert(`Erreur : ${error.message}`);
     }
     draw();
   }
 
-  async function handle({ target }) {
+  function onClick({ target }) {
     const book = target.closest('[data-book]');
     const readButton = target.closest('[data-read]');
     const summary = target.closest('[data-summary]');
-    if (book) await open(book.dataset.book);
-    else if (readButton) await toggleRead(readButton);
+    if (book) open(book.dataset.book);
+    else if (readButton) toggleRead(readButton);
     else if (summary) summary.classList.toggle('open');
-    // A tap anywhere but on the card closes it. Links leave the page, so they don't animate.
-    else if (!target.closest('.book-card, a')) await shrink();
-  }
-
-  // Taps during an animation are dropped, so two cards never move at once.
-  function onClick(event) {
-    if (busy) return;
-    busy = true;
-    handle(event).finally(() => { busy = false; });
+    // A tap anywhere but on the card closes it.
+    else if (openId && !target.closest('.book-card, a')) open(null);
   }
 
   main.onclick = onClick;

@@ -68,7 +68,7 @@ function ring(pct, size, stroke) {
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   return `
-    <svg class="ring" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" role="img" aria-label="${pct} % vu" style="--circumference: ${c}">
+    <svg class="ring" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" role="img" aria-label="${pct} % vu">
       <circle class="ring-track" cx="${size / 2}" cy="${size / 2}" r="${r}" stroke-width="${stroke}"/>
       <circle class="ring-fill" cx="${size / 2}" cy="${size / 2}" r="${r}" stroke-width="${stroke}" stroke-dasharray="${(c * pct) / 100} ${c}" transform="rotate(-90 ${size / 2} ${size / 2})"/>
       <text x="50%" y="50%" dy="0.35em">${pct} %</text>
@@ -84,13 +84,13 @@ function daysUntil(airstamp) {
 const minutes = (show) => `${number(show.minutes)} / ${number(show.aired_minutes)} min`;
 
 async function renderHome(category) {
-  setAccent(category.key);
   const shows = await api('/shows');
   const inTab = shows
     .filter((show) => show.category === category.key)
     .sort((a, b) => b.minutes - a.minutes || a.name.localeCompare(b.name, 'fr'));
   const count = (key) => shows.filter((show) => show.category === key).length;
   const seen = number(shows.reduce((sum, show) => sum + show.seen, 0));
+  setAccent(category.key);
   main.innerHTML = `
     <header class="page-header">
       <div>
@@ -108,8 +108,8 @@ async function renderHome(category) {
     <h2 class="tab-title">${category.label} <span>${inTab.length} ${inTab.length < 2 ? 'série' : 'séries'}</span></h2>
     ${inTab.length === 0 ? `<p class="empty card">${category.empty}</p>` : `
       <ul class="shows ${category.key}">
-        ${inTab.map((show, index) => `
-          <li style="--i: ${Math.min(index, 12)}"><a class="card show-row" href="#/show/${show.id}">
+        ${inTab.map((show) => `
+          <li><a class="card show-row" href="#/show/${show.id}">
             ${poster(show.image_url)}
             <div class="show-info">
               <div class="show-name">${esc(show.name)}</div>
@@ -136,12 +136,12 @@ function episodeDetails(episode, info) {
     </div>`;
 }
 
-function episodeRow(episode, aired, info, popped) {
+function episodeRow(episode, aired, info) {
   let date = 'Date inconnue';
   if (episode.airstamp) date = aired ? localDate(episode.airstamp) : `Diffusion le ${localDate(episode.airstamp)}`;
   return `
     <li class="episode ${aired ? '' : 'unaired'}">
-      <button class="check ${popped ? 'pop' : ''}" data-episode="${episode.id}" aria-pressed="${episode.watched}" aria-label="Vu" ${aired ? '' : 'disabled'}>${icon(ICONS.check)}</button>
+      <button class="check" data-episode="${episode.id}" aria-pressed="${episode.watched}" aria-label="Vu" ${aired ? '' : 'disabled'}>${icon(ICONS.check)}</button>
       <button class="episode-main" data-details="${episode.id}" aria-expanded="${Boolean(info)}">
         <span class="episode-number">${episode.number}</span>
         <span class="episode-text">
@@ -163,10 +163,6 @@ async function renderShow(id) {
   const episodeInfo = new Map();
   const openEpisodes = new Set();
   let summaryOpen = false;
-  // One-shot effects for the next draw: the check that pops, the seasons that just got finished.
-  let popped = null;
-  let finished = new Set();
-  let shownPercent = percent(show);
 
   function draw(openSeasons) {
     setAccent(show.category);
@@ -195,25 +191,13 @@ async function renderShow(id) {
         <details class="card season" data-season="${season}" ${openSeasons.has(season) ? 'open' : ''}>
           <summary>
             <span class="season-name">Saison ${season}</span>
-            <span class="season-count ${seasonDone(episodes) ? 'done' : ''} ${finished.has(season) ? 'glow' : ''}">${episodes.filter((episode) => episode.watched).length} / ${episodes.filter(isAired).length} vus</span>
+            <span class="season-count ${seasonDone(episodes) ? 'done' : ''}">${episodes.filter((episode) => episode.watched).length} / ${episodes.filter(isAired).length} vus</span>
             ${toTick(episodes).length > 0 ? `<button class="button small" data-season-all="${season}">Tout marquer vu</button>` : ''}
           </summary>
           <ul class="episodes">
-            ${episodes.map((ep) => episodeRow(ep, isAired(ep), openEpisodes.has(ep.id) && episodeInfo.get(ep.id), ep.id === popped)).join('')}
+            ${episodes.map((ep) => episodeRow(ep, isAired(ep), openEpisodes.has(ep.id) && episodeInfo.get(ep.id))).join('')}
           </ul>
         </details>`).join('')}`;
-    const fill = main.querySelector('.show-header .ring-fill');
-    if (finished.size > 0) main.querySelector('.show-header .ring').classList.add('glow');
-    // The ring grows from the share shown before the redraw to the new one.
-    if (shownPercent !== percent(show)) {
-      const c = 2 * Math.PI * fill.r.baseVal.value;
-      const target = fill.getAttribute('stroke-dasharray');
-      fill.setAttribute('stroke-dasharray', `${(c * shownPercent) / 100} ${c}`);
-      requestAnimationFrame(() => requestAnimationFrame(() => fill.setAttribute('stroke-dasharray', target)));
-      shownPercent = percent(show);
-    }
-    popped = null;
-    finished = new Set();
   }
 
   const setWatched = (episodes, watched) =>
@@ -222,12 +206,10 @@ async function renderShow(id) {
   const redraw = () => draw(new Set([...main.querySelectorAll('details[open]')].map((details) => Number(details.dataset.season))));
 
   async function handle(target) {
-    const doneBefore = new Set([...Map.groupBy(show.episodes, (ep) => ep.season)].filter(([, eps]) => seasonDone(eps)).map(([season]) => season));
     if (target.dataset.episode) {
       const episode = show.episodes.find((ep) => ep.id === Number(target.dataset.episode));
       // Ticked right away; the redraw below, or the one after an error, sets the real state.
       target.setAttribute('aria-pressed', !episode.watched);
-      if (!episode.watched) popped = episode.id;
       await setWatched([episode], !episode.watched);
     } else if (target.dataset.details) {
       const episodeId = Number(target.dataset.details);
@@ -247,11 +229,7 @@ async function renderShow(id) {
       return;
     }
     // Reload so counts, category and watched dates come from the server.
-    if (!target.dataset.details) {
-      Object.assign(show, await api(`/shows/${show.id}`));
-      finished = new Set([...Map.groupBy(show.episodes, (ep) => ep.season)]
-        .filter(([season, eps]) => seasonDone(eps) && !doneBefore.has(season)).map(([season]) => season));
-    }
+    if (!target.dataset.details) Object.assign(show, await api(`/shows/${show.id}`));
     redraw();
   }
 
@@ -288,8 +266,8 @@ function resultRow(show, inList) {
 }
 
 async function renderAdd() {
-  setAccent('');
   const inList = new Set((await api('/shows')).map((show) => show.id));
+  setAccent('');
   main.innerHTML = `
     ${backLink}
     <header class="page-header"><h1>Ajouter une série</h1></header>
@@ -333,8 +311,8 @@ async function renderAdd() {
 
 // The logout link is Cloudflare Access's own, so it only works online.
 async function renderProfile() {
-  setAccent('');
   const { email } = await api('/me');
+  setAccent('');
   main.innerHTML = `
     <header class="page-header"><h1>Profil</h1></header>
     <section class="card profile-id">
@@ -360,21 +338,13 @@ const FOOTERS = {
   profile: '',
 };
 
+// Each page swaps in its content once its data has arrived. The footer, the tab bar and the
+// scroll position change in the same frame, so the old page never shows the new page's state.
 async function render() {
   const [, route, param] = location.hash.split('/');
   const category = (route === 'tab' && CATEGORIES.find(({ key }) => key === param)) || CATEGORIES[0];
   const section = route === 'books' || route === 'profile' ? route : 'series';
   main.onclick = null;
-  footer.innerHTML = FOOTERS[section];
-  document.body.dataset.screen = route === 'show' || route === 'add' ? 'detail' : section;
-  for (const link of tabbar.querySelectorAll('a')) {
-    if (link.dataset.section === section) link.setAttribute('aria-current', 'page');
-    else link.removeAttribute('aria-current');
-  }
-  window.scrollTo(0, 0);
-  // Only the first draw of a page animates in; redraws after a tick don't.
-  main.dataset.enter = '';
-  setTimeout(() => delete main.dataset.enter, 500);
   try {
     if (route === 'show') await renderShow(Number(param));
     else if (route === 'add') await renderAdd();
@@ -384,6 +354,14 @@ async function render() {
   } catch (error) {
     main.innerHTML = `<p class="empty card">Erreur : ${esc(error.message)}</p>`;
   }
+  footer.innerHTML = FOOTERS[section];
+  document.body.dataset.screen = route === 'show' || route === 'add' ? 'detail' : section;
+  for (const link of tabbar.querySelectorAll('a')) {
+    if (link.dataset.section === section) link.setAttribute('aria-current', 'page');
+    else link.removeAttribute('aria-current');
+  }
+  // Aquilon scrolls itself to the first unread volume.
+  if (route !== 'books') window.scrollTo(0, 0);
 }
 
 // Opened straight on a show or the add page, "Retour" falls back to its href (home).
