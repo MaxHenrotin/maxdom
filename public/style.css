@@ -88,6 +88,8 @@
 
 body {
   margin: 0 auto;
+  /* iOS Safari flashes a grey box on every tapped link, over the sliding indicators. */
+  -webkit-tap-highlight-color: transparent;
   max-width: 80rem;
   min-height: 100dvh;
   background: var(--bg);
@@ -323,7 +325,9 @@ h1 { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 800; letter-spac
 
 /* Show page */
 
-.show-header { display: flex; gap: 16px; margin-top: 14px; padding: 16px; }
+.show-header { margin-top: 14px; padding: 16px 16px 10px; }
+
+.show-top { display: flex; gap: 16px; padding-bottom: 6px; }
 
 .show-header .poster { width: 112px; border-radius: 18px; }
 
@@ -339,7 +343,7 @@ h1 { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 800; letter-spac
 
 .show-header .ring text { font-size: 16px; }
 
-.show-summary { margin-top: 12px; padding: 14px 16px 6px; }
+.show-summary { margin-top: 10px; }
 
 /* A summary is cut to two lines until "Voir plus" (lib.js summaryBlock). */
 .summary {
@@ -577,8 +581,7 @@ summary .button { margin-left: auto; }
 
 .book-info .summary { margin-top: 10px; }
 
-/* The read check sits astride the card's bottom edge; a ring in the page colour cuts the
-   border around it, as if the edge opened to let it through. */
+/* The read check sits astride the card's bottom edge, its coloured rim meeting the border. */
 .read-toggle {
   position: absolute;
   bottom: -28px;
@@ -591,7 +594,6 @@ summary .button { margin-left: auto; }
   border: 3px solid var(--accent);
   border-radius: 50%;
   background: var(--card);
-  box-shadow: 0 0 0 6px var(--bg);
   color: transparent;
   cursor: pointer;
   transition: background-color 180ms ease, color 180ms ease;

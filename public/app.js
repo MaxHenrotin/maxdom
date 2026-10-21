@@ -189,17 +189,19 @@ async function renderShow(id) {
     patch(main, `
       ${backLink}
       <section class="card show-header ${show.category}">
-        ${poster(show.image_url)}
-        <div class="show-info">
-          <h1>${esc(show.name)}</h1>
-          <span class="chip">${category.label}${status ? ` · ${esc(status)}` : ''}</span>
-          <div class="show-progress">
-            ${ring(percent(show), 84, 8)}
-            <p><strong>${show.seen} / ${show.aired}</strong><br>épisodes<br>${minutes(show)}</p>
+        <div class="show-top">
+          ${poster(show.image_url)}
+          <div class="show-info">
+            <h1>${esc(show.name)}</h1>
+            <span class="chip">${category.label}${status ? ` · ${esc(status)}` : ''}</span>
+            <div class="show-progress">
+              ${ring(percent(show), 84, 8)}
+              <p><strong>${show.seen} / ${show.aired}</strong><br>épisodes<br>${minutes(show)}</p>
+            </div>
           </div>
         </div>
+        ${summary ? `<div class="show-summary">${summaryBlock(summary, summaryOpen)}</div>` : ''}
       </section>
-      ${summary ? `<div class="card show-summary">${summaryBlock(summary, summaryOpen)}</div>` : ''}
       ${stopped ? '<p class="muted hint">Reprends la série pour cocher de nouveaux épisodes.</p>' : ''}
       <div class="actions">
         ${stoppable ? `<button class="button" data-stop>${stopped ? 'Reprendre' : "J'arrête"}</button>` : ''}
