@@ -1,4 +1,4 @@
-import { ICONS, api, esc, frenchDate, icon, localDate, number, patch, setAccent } from './lib.js';
+import { ICONS, api, esc, frenchDate, icon, localDate, number, patch, setAccent, summaryBlock, trimMore } from './lib.js';
 
 // Column order of the tree. Their colours are --series-0 to --series-6 in style.css.
 const SERIES = [
@@ -45,15 +45,15 @@ function node(book) {
 
 // summary is undefined while it loads, '' when there is none. The cover and the read
 // check sit on the left; the text, then the summary, on the right.
-function card(book, summary, popped) {
+function card(book, summary, summaryOpen, popped) {
   let text = '';
-  if (summary === undefined) text = '<p class="book-summary loading"></p>';
-  else if (summary) text = `<p class="book-summary">${esc(summary)}</p><button class="more" data-more>Voir plus</button>`;
+  if (summary === undefined) text = '<p class="summary loading"></p>';
+  else if (summary) text = summaryBlock(summary, summaryOpen);
   return `
     <div class="book-card">
       <div class="book-side">
         ${book.cover_url ? `<img class="poster" src="${esc(book.cover_url)}" alt="">` : '<div class="poster"></div>'}
-        <button class="check${popped ? ' pop' : ''}" data-read aria-pressed="${Boolean(book.read_at)}" aria-label="Lu" ${book.released ? '' : 'disabled'}>${icon(ICONS.check)}</button>
+        <button class="check labelled${popped ? ' pop' : ''}" data-read aria-pressed="${Boolean(book.read_at)}" ${book.released ? '' : 'disabled'}>${icon(ICONS.check)}<span>Lu</span></button>
       </div>
       <div class="book-info">
         <span class="chip">${esc(book.series)} · Tome ${book.volume}</span>
@@ -63,12 +63,6 @@ function card(book, summary, popped) {
         ${text}
       </div>
     </div>`;
-}
-
-// "Voir plus" only stays when the summary is longer than the lines it is cut to.
-function trimMore(main) {
-  const text = main.querySelector('.book-summary:not(.loading)');
-  if (text && text.scrollHeight <= text.clientHeight) main.querySelector('[data-more]').remove();
 }
 
 // The open card grows out of its circle: the shell's box and the row's height run from
@@ -100,6 +94,7 @@ export async function renderBooks(main) {
   let busy = false;
   // The read check just ticked keeps its bounce through the redraw that follows.
   let popped = false;
+  let summaryOpen = false;
 
   const openRow = () => main.querySelector('.book-row.open');
   // render() replaces main.onclick when another page opens; a late redraw must not land on it.
@@ -132,7 +127,7 @@ export async function renderBooks(main) {
             <div class="book-row open ${growing ? 'growing hidden' : 'settled'}" style="${at(series(book))}">
               ${label}${branches(span, row)}
               <div class="shell"></div>
-              ${card(book, summaries.get(book.id), popped)}
+              ${card(book, summaries.get(book.id), summaryOpen, popped)}
             </div>`;
         }).join('')}
       </div>`);
@@ -171,10 +166,10 @@ export async function renderBooks(main) {
   async function loadSummary(id) {
     const summary = await api(`/books/${id}/summary`).then((data) => data.summary, () => '');
     summaries.set(id, summary);
-    const slot = onPage() && openId === id && main.querySelector('.book-summary.loading');
+    const slot = onPage() && openId === id && main.querySelector('.summary.loading');
     if (!slot) return;
     if (summary) {
-      slot.outerHTML = `<p class="book-summary">${esc(summary)}</p><button class="more" data-more>Voir plus</button>`;
+      slot.outerHTML = summaryBlock(summary, false);
       trimMore(main);
     } else {
       slot.remove();
@@ -184,6 +179,7 @@ export async function renderBooks(main) {
   async function open(id) {
     await shrink();
     openId = id;
+    summaryOpen = false;
     draw({ growing: true });
     if (!summaries.has(id)) loadSummary(id);
     await grow();
@@ -210,8 +206,9 @@ export async function renderBooks(main) {
     if (book) await open(book.dataset.book);
     else if (readButton) await toggleRead(readButton);
     else if (more) {
-      const expanded = main.querySelector('.book-summary').classList.toggle('open');
-      more.textContent = expanded ? 'Voir moins' : 'Voir plus';
+      summaryOpen = !summaryOpen;
+      more.previousElementSibling.classList.toggle('open', summaryOpen);
+      more.textContent = summaryOpen ? 'Voir moins' : 'Voir plus';
     }
     // A tap anywhere but on the card closes it. Links leave the page, so they don't animate.
     else if (!target.closest('.book-card, a')) await shrink();

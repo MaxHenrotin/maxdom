@@ -60,3 +60,15 @@ function update(current, next) {
     update(node, other);
   });
 }
+
+// A summary cut to three lines, with a button that shows the rest.
+export const summaryBlock = (text, open) =>
+  `<p class="summary${open ? ' open' : ''}">${esc(text)}</p><button class="more" data-more>${open ? 'Voir moins' : 'Voir plus'}</button>`;
+
+// "Voir plus" only stays when a closed summary is longer than its three lines.
+export function trimMore(container) {
+  for (const more of container.querySelectorAll('[data-more]')) {
+    const text = more.previousElementSibling;
+    if (!text.classList.contains('open') && text.scrollHeight <= text.clientHeight) more.remove();
+  }
+}

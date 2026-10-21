@@ -339,25 +339,25 @@ h1 { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 800; letter-spac
 
 .show-header .ring text { font-size: 16px; }
 
-.show-summary {
-  display: block;
-  width: 100%;
-  margin: 12px 0 0;
-  padding: 14px 16px;
-  border: none;
+.show-summary { margin-top: 12px; padding: 14px 16px 6px; }
+
+/* A summary is cut to three lines until "Voir plus" (lib.js summaryBlock). */
+.summary {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
   color: var(--ink-2);
   font-size: 14px;
   line-height: 1.5;
-  text-align: left;
-  cursor: pointer;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
-/* Cut to four lines until tapped; line-clamp doesn't apply to the button itself. */
-.show-summary span { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }
+.summary.open { display: block; }
 
-.show-summary.open span { display: block; }
+.summary.loading { min-height: 4.5em; }
 
-.show-summary.loading { min-height: 5.6em; }
+.more { padding: 6px 0; border: none; background: none; color: var(--accent-text); font-size: 13px; font-weight: 800; cursor: pointer; }
 
 .hint { margin: 12px 4px 0; }
 
@@ -577,19 +577,7 @@ summary .button { margin-left: auto; }
 
 .book-info .muted { margin-top: 4px; }
 
-.book-summary {
-  display: -webkit-box;
-  margin: 10px 0 0;
-  overflow: hidden;
-  color: var(--ink-2);
-  font-size: 14px;
-  line-height: 1.5;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 6;
-}
+.book-info .summary { margin-top: 10px; }
 
-.book-summary.open { display: block; }
-
-.book-summary.loading { min-height: 9em; }
-
-.more { padding: 6px 0; border: none; background: none; color: var(--accent-text); font-size: 13px; font-weight: 800; cursor: pointer; }
+/* The read check carries its word, so it reads as "Lu" ticked or not. */
+.check.labelled { display: flex; gap: 6px; width: auto; padding: 0 12px 0 4px; font-size: 15px; font-weight: 700; }

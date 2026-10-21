@@ -1,5 +1,5 @@
 import { renderBooks } from './books.js';
-import { ICONS, api, esc, frenchDate, icon, localDate, number, patch, setAccent } from './lib.js';
+import { ICONS, api, esc, frenchDate, icon, localDate, number, patch, setAccent, summaryBlock, trimMore } from './lib.js';
 
 const CATEGORIES = [
   {
@@ -199,7 +199,7 @@ async function renderShow(id) {
           </div>
         </div>
       </section>
-      ${summary ? `<button class="card show-summary ${summaryOpen ? 'open' : ''}" data-summary><span>${esc(summary)}</span></button>` : ''}
+      ${summary ? `<div class="card show-summary">${summaryBlock(summary, summaryOpen)}</div>` : ''}
       ${stopped ? '<p class="muted hint">Reprends la série pour cocher de nouveaux épisodes.</p>' : ''}
       <div class="actions">
         ${stoppable ? `<button class="button" data-stop>${stopped ? 'Reprendre' : "J'arrête"}</button>` : ''}
@@ -216,6 +216,7 @@ async function renderShow(id) {
             ${episodes.map((ep) => episodeRow(ep, isAired(ep), stopped, openEpisodes.has(ep.id) && episodeInfo.get(ep.id), ep.id === popped)).join('')}
           </ul>
         </details>`).join('')}`);
+    trimMore(main);
     popped = null;
   }
 
@@ -255,10 +256,11 @@ async function renderShow(id) {
   }
 
   main.onclick = (event) => {
-    const summaryText = event.target.closest('[data-summary]');
-    if (summaryText) {
+    const more = event.target.closest('[data-more]');
+    if (more) {
       summaryOpen = !summaryOpen;
-      summaryText.classList.toggle('open', summaryOpen);
+      more.previousElementSibling.classList.toggle('open', summaryOpen);
+      more.textContent = summaryOpen ? 'Voir moins' : 'Voir plus';
       return;
     }
     const target = event.target.closest('button');
