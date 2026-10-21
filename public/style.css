@@ -88,7 +88,7 @@
 
 body {
   margin: 0 auto;
-  max-width: 44rem;
+  max-width: 80rem;
   min-height: 100dvh;
   background: var(--bg);
   color: var(--ink);
