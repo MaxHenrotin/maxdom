@@ -65,5 +65,8 @@ export function dedupeEditions(books) {
 
 const column = (book) => SERIES.findIndex((series) => series.name === book.series);
 
+// ISO dates sort as plain strings; localeCompare would cost a few ms of collator setup per fresh Worker.
+const byDate = (a, b) => (a.published > b.published) - (a.published < b.published);
+
 export const sortBooks = (books) =>
-  [...books].sort((a, b) => a.published.localeCompare(b.published) || column(a) - column(b) || a.volume - b.volume);
+  [...books].sort((a, b) => byDate(a, b) || column(a) - column(b) || a.volume - b.volume);
