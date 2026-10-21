@@ -11,6 +11,9 @@
     { "binding": "DB", "database_name": "maxdom", "database_id": "90ac6468-35bd-44a2-8cff-49428b7b2564", "preview_database_id": "local" }
   ],
   "triggers": { "crons": ["0 5 * * *", "0 6 * * 1"] },
-  // Filled at deploy time from the Cloudflare Access application. Left empty, every API request is refused.
-  "vars": { "ACCESS_TEAM_DOMAIN": "", "ACCESS_AUD": "" }
+  // From the Cloudflare Access application that protects the Worker. Left empty, every API request is refused.
+  "vars": {
+    "ACCESS_TEAM_DOMAIN": "https://maxhenrotin.cloudflareaccess.com",
+    "ACCESS_AUD": "62d090d7f10a5de2528343b8500cf482eb6163f6486e8286eaeafcf86a08c8a3"
+  }
 }
