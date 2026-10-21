@@ -180,11 +180,18 @@ main { view-transition-name: page; }
 
 .category-switch .tab-list { view-transition-name: page; }
 
+/* Like the tab bar, the home header and the category bar get layers of their own during a
+   category switch: shown live, so the indicator slides and the + button fades without the
+   flicker Safari gives them inside the page's root layer. */
 .tabbar { view-transition-name: tabbar; }
 
-::view-transition-old(root), ::view-transition-old(tabbar) { display: none; }
+.category-switch .page-header { view-transition-name: home-header; }
 
-::view-transition-new(root), ::view-transition-new(tabbar), ::view-transition-group(*) { animation: none; }
+.category-switch .categories { view-transition-name: categories; }
+
+::view-transition-old(root), ::view-transition-old(tabbar), ::view-transition-old(home-header), ::view-transition-old(categories) { display: none; }
+
+::view-transition-new(root), ::view-transition-new(tabbar), ::view-transition-new(home-header), ::view-transition-new(categories), ::view-transition-group(*) { animation: none; }
 
 @keyframes blur-out { to { opacity: 0; filter: blur(6px); } }
 
@@ -569,7 +576,8 @@ summary .button { margin-left: auto; }
 
 .hidden .book-card { opacity: 0; }
 
-.book-card > .poster { width: 116px; border-radius: 14px; }
+/* The cover keeps its size and place when the summary opens and the card grows. */
+.book-card > .poster { align-self: flex-start; width: 116px; border-radius: 14px; }
 
 .book-info { flex: 1; min-width: 0; }
 
