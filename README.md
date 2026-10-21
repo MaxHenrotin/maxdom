@@ -1,6 +1,6 @@
-# TV show tracker
+# Maxdom
 
-A small personal tracker for the TV series I watch, started from my TV Time history. It runs on Cloudflare Workers and D1, with show data from [TVmaze](https://www.tvmaze.com).
+A small personal tracker for the TV series I watch and the Chroniques d'Aquilon comics I read. The series list started from my TV Time history. It runs on Cloudflare Workers and D1, with show data from [TVmaze](https://www.tvmaze.com).
 
 Requires Node 22 or later.
 
@@ -18,7 +18,7 @@ The data lives in the local D1 database that wrangler keeps under `.wrangler/sta
 Export the whole database (schema, migration history and data) to a SQL file:
 
 ```sh
-npx wrangler d1 export tvtime --local --output=data/backup-YYYY-MM-DD.sql
+npx wrangler d1 export maxdom --local --output=data/backup-YYYY-MM-DD.sql
 ```
 
 The "Télécharger ma base" button on the Profil page gives the same kind of file from the browser, which also works once the app is online. It is built by the Worker (`GET /api/export`) and restores the same way.
@@ -26,7 +26,7 @@ The "Télécharger ma base" button on the Profil page gives the same kind of fil
 To restore it into an empty local database, for example on a new machine, run the file as is. Don't run `npm run db:migrate` before: the export already creates the tables.
 
 ```sh
-npx wrangler d1 execute tvtime --local --file=data/backup-YYYY-MM-DD.sql
+npx wrangler d1 execute maxdom --local --file=data/backup-YYYY-MM-DD.sql
 ```
 
 `data/` is ignored by git because it holds personal data, so keep a copy of the backups somewhere else too.
@@ -59,8 +59,8 @@ The remote database is filled from an export of the local one. The export alread
 
 ```sh
 npx wrangler login
-npx wrangler d1 create tvtime        # put the printed database_id in wrangler.jsonc
-npx wrangler d1 export tvtime --local --output=data/backup-YYYY-MM-DD.sql
-npx wrangler d1 execute tvtime --remote --file=data/backup-YYYY-MM-DD.sql
+npx wrangler d1 create maxdom        # put the printed database_id in wrangler.jsonc
+npx wrangler d1 export maxdom --local --output=data/backup-YYYY-MM-DD.sql
+npx wrangler d1 execute maxdom --remote --file=data/backup-YYYY-MM-DD.sql
 npx wrangler deploy
 ```

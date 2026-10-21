@@ -1,11 +1,11 @@
 {
-  "name": "tvtime",
+  "name": "maxdom",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
     "test": "vitest run",
-    "db:migrate": "wrangler d1 migrations apply tvtime --local"
+    "db:migrate": "wrangler d1 migrations apply maxdom --local"
   },
   "devDependencies": {
     "vitest": "^5.0.5",
