@@ -9,9 +9,11 @@ export function upsertShowStatements(db, show, episodes) {
       image_url = excluded.image_url,
       premiered_year = excluded.premiered_year,
       tvmaze_updated = excluded.tvmaze_updated`);
-  const insertEpisode = db.prepare(`
+  // One statement whatever the number of episodes: D1 caps the queries per Worker invocation.
+  const insertEpisodes = db.prepare(`
     INSERT INTO episodes (id, show_id, season, number, name, airstamp, runtime)
-    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+    SELECT value ->> 'id', value ->> 'show_id', value ->> 'season', value ->> 'number', value ->> 'name', value ->> 'airstamp', value ->> 'runtime'
+    FROM json_each(?1) WHERE true
     ON CONFLICT (id) DO UPDATE SET
       season = excluded.season,
       number = excluded.number,
@@ -22,7 +24,7 @@ export function upsertShowStatements(db, show, episodes) {
   const episodeIds = JSON.stringify(episodes.map((ep) => ep.id));
   return [
     insertShow.bind(show.id, show.name, show.status, show.image_url, show.premiered_year, show.tvmaze_updated),
-    ...episodes.map((ep) => insertEpisode.bind(ep.id, ep.show_id, ep.season, ep.number, ep.name, ep.airstamp, ep.runtime)),
+    insertEpisodes.bind(JSON.stringify(episodes)),
     db.prepare(`DELETE FROM watched WHERE episode_id IN (${stale})`).bind(show.id, episodeIds),
     db.prepare(`DELETE FROM episodes WHERE id IN (${stale})`).bind(show.id, episodeIds),
   ];
