@@ -341,7 +341,7 @@ h1 { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 800; letter-spac
 
 .show-summary { margin-top: 12px; padding: 14px 16px 6px; }
 
-/* A summary is cut to three lines until "Voir plus" (lib.js summaryBlock). */
+/* A summary is cut to two lines until "Voir plus" (lib.js summaryBlock). */
 .summary {
   display: -webkit-box;
   margin: 0;
@@ -350,12 +350,12 @@ h1 { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 800; letter-spac
   font-size: 14px;
   line-height: 1.5;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
 }
 
 .summary.open { display: block; }
 
-.summary.loading { min-height: 4.5em; }
+.summary.loading { min-height: 3em; }
 
 .more { padding: 6px 0; border: none; background: none; color: var(--accent-text); font-size: 13px; font-weight: 800; cursor: pointer; }
 
@@ -539,7 +539,7 @@ summary .button { margin-left: auto; }
   position: absolute;
   border: 2px solid color-mix(in srgb, var(--colour) 45%, transparent);
   background: var(--card);
-  box-shadow: 0 12px 32px var(--shadow);
+  box-shadow: 0 4px 14px var(--shadow);
   transition: all 0.45s ease;
 }
 
@@ -551,23 +551,21 @@ summary .button { margin-left: auto; }
   border-radius: 16px;
 }
 
-.settled .shell { inset: 0 0 10px; border-radius: 24px; }
+.settled .shell { inset: 0 0 34px; border-radius: 24px; }
 
 .book-card {
   --category: var(--colour);
   position: relative;
   display: flex;
   gap: 16px;
-  margin-bottom: 10px;
-  padding: 16px;
+  margin-bottom: 34px;
+  padding: 16px 16px 36px;
   transition: opacity 0.2s;
 }
 
 .hidden .book-card { opacity: 0; }
 
-.book-side { flex: none; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-
-.book-side .poster { width: 116px; border-radius: 14px; }
+.book-card > .poster { width: 116px; border-radius: 14px; }
 
 .book-info { flex: 1; min-width: 0; }
 
@@ -579,5 +577,30 @@ summary .button { margin-left: auto; }
 
 .book-info .summary { margin-top: 10px; }
 
-/* The read check carries its word, so it reads as "Lu" ticked or not. */
-.check.labelled { display: flex; gap: 6px; width: auto; padding: 0 12px 0 4px; font-size: 15px; font-weight: 700; }
+/* The read check sits astride the card's bottom edge; a ring in the page colour cuts the
+   border around it, as if the edge opened to let it through. */
+.read-toggle {
+  position: absolute;
+  bottom: -28px;
+  left: calc(50% - 28px);
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: 3px solid var(--accent);
+  border-radius: 50%;
+  background: var(--card);
+  box-shadow: 0 0 0 6px var(--bg);
+  color: transparent;
+  cursor: pointer;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+.read-toggle .icon { width: 26px; height: 26px; stroke-width: 3; }
+
+.read-toggle[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+
+.read-toggle.pop { animation: pop 240ms ease-out; }
+
+.read-toggle:disabled { border-style: dashed; border-color: var(--line); cursor: default; }

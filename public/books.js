@@ -43,18 +43,15 @@ function node(book) {
   return `<button class="node ${state}" data-book="${esc(book.id)}" style="${at(series(book))}" aria-label="${esc(label)}">${book.read_at ? icon(ICONS.check) : book.volume}</button>`;
 }
 
-// summary is undefined while it loads, '' when there is none. The cover and the read
-// check sit on the left; the text, then the summary, on the right.
+// summary is undefined while it loads, '' when there is none. The cover sits on the left,
+// the text and the summary on the right, and the read check on the card's bottom edge.
 function card(book, summary, summaryOpen, popped) {
   let text = '';
   if (summary === undefined) text = '<p class="summary loading"></p>';
   else if (summary) text = summaryBlock(summary, summaryOpen);
   return `
     <div class="book-card">
-      <div class="book-side">
-        ${book.cover_url ? `<img class="poster" src="${esc(book.cover_url)}" alt="">` : '<div class="poster"></div>'}
-        <button class="check labelled${popped ? ' pop' : ''}" data-read aria-pressed="${Boolean(book.read_at)}" ${book.released ? '' : 'disabled'}>${icon(ICONS.check)}<span>Lu</span></button>
-      </div>
+      ${book.cover_url ? `<img class="poster" src="${esc(book.cover_url)}" alt="">` : '<div class="poster"></div>'}
       <div class="book-info">
         <span class="chip">${esc(book.series)} · Tome ${book.volume}</span>
         <div class="book-title">${esc(book.title)}</div>
@@ -62,6 +59,7 @@ function card(book, summary, summaryOpen, popped) {
         ${book.read_at ? `<p class="muted">Lu le ${localDate(book.read_at)}</p>` : ''}
         ${text}
       </div>
+      <button class="read-toggle${popped ? ' pop' : ''}" data-read aria-label="Lu" aria-pressed="${Boolean(book.read_at)}" ${book.released ? '' : 'disabled'}>${icon(ICONS.check)}</button>
     </div>`;
 }
 
@@ -75,9 +73,12 @@ const FADE_OUT_MS = 150;
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
+// Room under an open card for the lower half of the read check (.book-card's margin in style.css).
+const BELOW_CARD = 34;
+
 // Transitions need pixel sizes at both ends; once open, the card sizes itself so the summary can expand.
 function pinToCard(row) {
-  const box = { left: '0px', top: '0px', width: `${row.clientWidth}px`, height: `${row.scrollHeight - 10}px`, borderRadius: '24px' };
+  const box = { left: '0px', top: '0px', width: `${row.clientWidth}px`, height: `${row.scrollHeight - BELOW_CARD}px`, borderRadius: '24px' };
   Object.assign(row.querySelector('.shell').style, box);
   row.style.height = `${row.scrollHeight}px`;
 }
