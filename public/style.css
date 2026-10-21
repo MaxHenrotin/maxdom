@@ -322,7 +322,7 @@ h1 { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 800; letter-spac
 
 .progress-text { margin-top: 3px; color: var(--muted); font-size: 13px; line-height: 1.35; }
 
-.ring { flex: none; border-radius: 50%; }
+.ring { flex: none; }
 
 .ring-track { fill: none; stroke: var(--track); }
 
@@ -597,7 +597,7 @@ summary .button { margin-left: auto; }
   padding: 16px 16px 36px;
 }
 
-.book-card > * { transition: opacity 0.2s, transform 0.2s; }
+.book-card > * { transition: opacity 0.2s; }
 
 /* The content, the read check included, only shows once the shape is open. */
 .hidden .book-card > * { opacity: 0; }

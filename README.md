@@ -51,7 +51,7 @@ curl "localhost:8787/cdn-cgi/local/scheduled"
 
 Each run only looks at the shows TVmaze changed in the past week, and refreshes at most 10 of them.
 
-A second cron reads the Chroniques d'Aquilon catalogue from monde-aquilon.com once a week, on Monday morning, and adds or updates the volumes of the "Aquilon" part. It never deletes one. To run it by hand, pass its schedule:
+A second cron reads the Chroniques d'Aquilon catalogue from monde-aquilon.com once a week, on Monday morning, and adds or updates the volumes of the "Aquilon" part. It never deletes one. A volume's summary is read from its page on the site the first time someone opens it, then kept in the database (only once the volume is out); the cron forgets it when the volume's title or date changes, so it is read again. To run it by hand, pass its schedule:
 
 ```sh
 curl "localhost:8787/cdn-cgi/local/scheduled?cron=0+6+*+*+1"

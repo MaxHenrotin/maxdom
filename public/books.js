@@ -43,11 +43,11 @@ function node(book) {
   return `<button class="node ${state}" data-book="${esc(book.id)}" style="${at(series(book))}" aria-label="${esc(label)}">${book.read_at ? icon(ICONS.check) : book.volume}</button>`;
 }
 
-// summary is undefined while it loads, '' when there is none. The cover sits on the left,
-// the text and the summary on the right, and the read check on the card's bottom edge.
+// summary is undefined while it loads (its room is kept, so the card doesn't change height when
+// it arrives), '' when the volume has none. The cover sits on the left, the text and the
+// summary on the right, and the read check on the card's bottom edge.
 function card(book, summary, summaryOpen, popped) {
-  // A summary that failed to load still keeps its room, so the card never changes height.
-  const text = summaryBlock(summary === '' ? undefined : summary, summaryOpen);
+  const text = summary === '' ? '' : summaryBlock(summary, summaryOpen);
   return `
     <div class="book-card">
       ${book.cover_url ? `<img class="poster" src="${esc(book.cover_url)}" alt="">` : '<div class="poster"></div>'}
@@ -165,8 +165,10 @@ export async function renderBooks(main) {
   }
 
   // The card opens before its summary arrives, with a placeholder of the same size (summaryBlock).
+  // A failed request keeps the placeholder and is tried again at the next opening.
   async function loadSummary(id) {
-    const summary = await api(`/books/${id}/summary`).then((data) => data.summary, () => '');
+    const summary = await api(`/books/${id}/summary`).then((data) => data.summary, () => undefined);
+    if (summary === undefined) return;
     summaries.set(id, summary);
     const slot = onPage() && openId === id && main.querySelector('.summary.loading');
     if (!slot || !summary) return;

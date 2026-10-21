@@ -132,7 +132,7 @@ export default {
 
     // Book ids are slugs, which the numeric :id pattern above doesn't cover.
     const summary = pathname.match(/^\/api\/books\/([a-z0-9-]+)\/summary$/);
-    if (request.method === 'GET' && summary) return getSummary(db, summary[1]);
+    if (request.method === 'GET' && summary) return getSummary(db, now, summary[1]);
 
     switch (route) {
       case 'GET /api/shows': return listShows(db, now, user);

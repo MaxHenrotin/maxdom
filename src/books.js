@@ -31,7 +31,8 @@ async function scrapeCatalogue() {
   return dedupeEditions(books);
 }
 
-// One statement whatever the catalogue size, so the run costs a single D1 query.
+// One statement whatever the catalogue size, so the run costs a single D1 query. A volume whose
+// title or date changed loses its stored summary, which is read again at its next opening.
 export async function refreshBooks(env) {
   const books = await scrapeCatalogue();
   if (books.length > 0) {
@@ -44,7 +45,8 @@ export async function refreshBooks(env) {
         volume = excluded.volume,
         title = excluded.title,
         published = excluded.published,
-        cover_url = excluded.cover_url`)
+        cover_url = excluded.cover_url,
+        summary = CASE WHEN books.title IS excluded.title AND books.published IS excluded.published THEN books.summary END`)
       .bind(JSON.stringify(books))
       .run();
   }
@@ -84,14 +86,15 @@ export async function setRead(db, now, user, { bookIds, read }) {
 
 // The site sends no CORS headers, so the browser asks the Worker. Only known ids are
 // fetched, which keeps the Worker from requesting arbitrary pages. A summary is read from the
-// site once, by whoever opens the volume first, then served from the database.
-export async function getSummary(db, id) {
-  const book = await db.prepare('SELECT summary FROM books WHERE id = ?1').bind(id).first();
+// site once, by whoever opens the volume first, then served from the database. A volume not
+// out yet is read every time: its page may still change before it comes out.
+export async function getSummary(db, now, id) {
+  const book = await db.prepare('SELECT summary, published FROM books WHERE id = ?1').bind(id).first();
   if (!book) return error(404, 'unknown book');
   if (book.summary !== null) return Response.json({ summary: book.summary });
   try {
     const summary = parseSummary(await fetchPage(`/livre/${id}/`));
-    await db.prepare('UPDATE books SET summary = ?2 WHERE id = ?1').bind(id, summary).run();
+    if (book.published <= now.slice(0, 10)) await db.prepare('UPDATE books SET summary = ?2 WHERE id = ?1').bind(id, summary).run();
     return Response.json({ summary });
   } catch (err) {
     return error(502, err.message);

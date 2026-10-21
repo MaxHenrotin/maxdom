@@ -36,6 +36,20 @@ describe('refreshBooks', () => {
     expect(await db.prepare("SELECT 1 FROM books_read WHERE book_id = 'elfes-t36'").first()).not.toBeNull();
   });
 
+  it('forgets a stored summary when the title or the date of its volume changes', async () => {
+    const db = createD1();
+    await db.prepare(`INSERT INTO books (id, series, volume, title, published, summary) VALUES
+      ('elfes-t36', 'Elfes', 36, 'Old title', '2026-09-24', 'old'),
+      ('elfes-t35', 'Elfes', 35, 'Le Havre des ombres', '2023-01-25', 'kept')`).run();
+    stubSite({ elfes: fixture('elfes-page-1.html') });
+
+    await refreshBooks({ DB: db });
+
+    const summary = async (id) => (await db.prepare('SELECT summary FROM books WHERE id = ?1').bind(id).first()).summary;
+    expect(await summary('elfes-t36')).toBeNull();
+    expect(await summary('elfes-t35')).toBe('kept');
+  });
+
   it('saves what it fetched before the site failed and deletes nothing', async () => {
     const db = createD1();
     await db.prepare("INSERT INTO books (id, series, volume, published) VALUES ('mages-t01', 'Mages', 1, '2019-01-01')").run();
@@ -125,6 +139,15 @@ describe('books API', () => {
     const books = await get('/api/books');
     expect(books.find((b) => b.id === 'mages-t04').summary).toMatch(/^Arundill a six ans/);
     expect(books.find((b) => b.id === 'n1').summary).toBeNull();
+  });
+
+  it('reads the summary of a volume not out yet from the site every time', async () => {
+    const fetch = vi.fn(async () => new Response(fixture('mages-t04.html')));
+    vi.stubGlobal('fetch', fetch);
+    await get('/api/books/m1/summary');
+    await get('/api/books/m1/summary');
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect((await get('/api/books')).find((b) => b.id === 'm1').summary).toBeNull();
   });
 
   it('keeps an empty summary too, so a volume without one is not fetched again', async () => {
