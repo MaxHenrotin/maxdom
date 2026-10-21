@@ -364,10 +364,15 @@ summary .button { padding: 4px 12px; font-size: 14px; font-weight: 400; }
   border: 2px solid var(--colour);
   border-radius: 50%;
   background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: 9px;
+  font-weight: 600;
   cursor: pointer;
 }
 
-.node.read { border-color: var(--accent); background: var(--accent); }
+/* The border keeps the series colour, so a read volume still shows its series. */
+.node.read { background: var(--accent); }
 
 .node.read::before { content: "✓"; color: var(--bg); font-size: 11px; font-weight: 700; }
 

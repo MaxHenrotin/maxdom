@@ -39,7 +39,7 @@ function branches(span, row) {
 function node(book) {
   const state = book.read_at ? 'read' : book.released ? '' : 'unreleased';
   const label = `${SERIES[series(book)].short} ${book.volume} : ${book.title}`;
-  return `<button class="node ${state}" data-book="${esc(book.id)}" style="${at(series(book))}" aria-label="${esc(label)}"></button>`;
+  return `<button class="node ${state}" data-book="${esc(book.id)}" style="${at(series(book))}" aria-label="${esc(label)}">${book.read_at ? '' : book.volume}</button>`;
 }
 
 // summary is undefined while it loads, '' when there is none.
