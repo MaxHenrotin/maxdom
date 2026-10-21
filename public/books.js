@@ -75,11 +75,13 @@ const nextFrame = () => new Promise((resolve) => requestAnimationFrame(() => req
 // Room under an open card for its bump and the bump's shadow (.book-card's margin in style.css).
 const BELOW_CARD = 40;
 
-// Transitions need pixel sizes at both ends; once open, the card sizes itself so the summary can expand.
+// Transitions need pixel sizes at both ends; once open, the card sizes itself so the summary can
+// expand. The sizes come from the card itself: the row clips it, so its scrollHeight falls short.
 function pinToCard(row) {
-  const box = { left: '0px', top: '0px', width: `${row.clientWidth}px`, height: `${row.scrollHeight - BELOW_CARD}px`, borderRadius: '24px' };
+  const height = row.querySelector('.book-card').offsetHeight;
+  const box = { left: '0px', top: '0px', width: `${row.clientWidth}px`, height: `${height}px`, borderRadius: '24px' };
   Object.assign(row.querySelector('.shell').style, box);
-  row.style.height = `${row.scrollHeight}px`;
+  row.style.height = `${height + BELOW_CARD}px`;
 }
 
 function unpin(row) {
@@ -89,7 +91,8 @@ function unpin(row) {
 
 export async function renderBooks(main) {
   let books = await api('/books');
-  const summaries = new Map();
+  // Summaries already stored come with the list; the others are fetched when their card opens.
+  const summaries = new Map(books.filter((book) => book.summary !== null).map((book) => [book.id, book.summary]));
   let openId = null;
   let busy = false;
   // The read check just ticked keeps its bounce through the redraw that follows.

@@ -115,6 +115,26 @@ describe('books API', () => {
     expect(fetch).toHaveBeenCalledWith('https://www.monde-aquilon.com/livre/mages-t04/');
   });
 
+  it('keeps a fetched summary in the database and serves it from there', async () => {
+    const fetch = vi.fn(async () => new Response(fixture('mages-t04.html')));
+    vi.stubGlobal('fetch', fetch);
+    await get('/api/books/mages-t04/summary');
+
+    expect((await get('/api/books/mages-t04/summary')).summary).toMatch(/^Arundill a six ans/);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    const books = await get('/api/books');
+    expect(books.find((b) => b.id === 'mages-t04').summary).toMatch(/^Arundill a six ans/);
+    expect(books.find((b) => b.id === 'n1').summary).toBeNull();
+  });
+
+  it('keeps an empty summary too, so a volume without one is not fetched again', async () => {
+    const fetch = vi.fn(async () => new Response('<html><body>No summary here</body></html>'));
+    vi.stubGlobal('fetch', fetch);
+    expect((await get('/api/books/n1/summary')).summary).toBe('');
+    await get('/api/books/n1/summary');
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
   it('refuses a summary for an unknown id without fetching', async () => {
     const fetch = vi.fn();
     vi.stubGlobal('fetch', fetch);

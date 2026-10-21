@@ -83,11 +83,16 @@ export async function setRead(db, now, user, { bookIds, read }) {
 }
 
 // The site sends no CORS headers, so the browser asks the Worker. Only known ids are
-// fetched, which keeps the Worker from requesting arbitrary pages.
+// fetched, which keeps the Worker from requesting arbitrary pages. A summary is read from the
+// site once, by whoever opens the volume first, then served from the database.
 export async function getSummary(db, id) {
-  if (!(await db.prepare('SELECT 1 FROM books WHERE id = ?1').bind(id).first())) return error(404, 'unknown book');
+  const book = await db.prepare('SELECT summary FROM books WHERE id = ?1').bind(id).first();
+  if (!book) return error(404, 'unknown book');
+  if (book.summary !== null) return Response.json({ summary: book.summary });
   try {
-    return Response.json({ summary: parseSummary(await fetchPage(`/livre/${id}/`)) });
+    const summary = parseSummary(await fetchPage(`/livre/${id}/`));
+    await db.prepare('UPDATE books SET summary = ?2 WHERE id = ?1').bind(id, summary).run();
+    return Response.json({ summary });
   } catch (err) {
     return error(502, err.message);
   }
