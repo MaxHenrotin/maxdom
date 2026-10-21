@@ -376,7 +376,7 @@ h1 { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 800; letter-spac
 /* Deleting a show sits apart at the very bottom, out of the way of a stray tap. */
 .danger-zone { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line); text-align: center; }
 
-.danger { display: inline-flex; align-items: center; gap: 8px; padding: 12px 8px; border: none; background: none; color: var(--danger); font-size: 14px; font-weight: 700; cursor: pointer; }
+.danger { display: inline-flex; align-items: center; gap: 8px; padding: 12px 8px; border: none; background: none; color: var(--danger); font-size: 14px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 
 .season { margin-top: 12px; overflow: hidden; }
 
