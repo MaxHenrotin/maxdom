@@ -397,9 +397,11 @@ async function update(route, param) {
 function render() {
   const [, route, param] = location.hash.split('/');
   const page = route === 'tab' || !route ? 'home' : route;
+  const first = shownPage === null;
   document.documentElement.classList.toggle('category-switch', page === 'home' && shownPage === 'home');
   shownPage = page;
-  if (document.startViewTransition) document.startViewTransition(() => update(route, param));
+  // The first page has nothing to blend from.
+  if (document.startViewTransition && !first) document.startViewTransition(() => update(route, param));
   else update(route, param);
 }
 

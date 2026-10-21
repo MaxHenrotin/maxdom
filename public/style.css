@@ -366,9 +366,11 @@ h1 { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 800; letter-spac
 
 .summary.open { display: block; }
 
-.summary.loading { min-height: 3em; }
+.summary.loading { height: 3em; }
 
-.more { padding: 6px 0; border: none; background: none; color: var(--accent-text); font-size: 13px; font-weight: 800; cursor: pointer; }
+.more.concealed { visibility: hidden; }
+
+.more { display: block; padding: 6px 0; border: none; background: none; color: var(--accent-text); font-size: 13px; font-weight: 800; cursor: pointer; }
 
 .hint { margin: 12px 4px 0; }
 

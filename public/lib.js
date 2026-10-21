@@ -61,14 +61,19 @@ function update(current, next) {
   });
 }
 
-// A summary cut to three lines, with a button that shows the rest.
-export const summaryBlock = (text, open) =>
-  `<p class="summary${open ? ' open' : ''}">${esc(text)}</p><button class="more" data-more>${open ? 'Voir moins' : 'Voir plus'}</button>`;
+// A summary cut to two lines, with a button that shows the rest. Without text it is a
+// placeholder of the same size, for a summary still loading.
+export const summaryBlock = (text, open) => (text === undefined
+  ? '<p class="summary loading"></p><button class="more concealed" disabled>Voir plus</button>'
+  : `<p class="summary${open ? ' open' : ''}">${esc(text)}</p><button class="more" data-more>${open ? 'Voir moins' : 'Voir plus'}</button>`);
 
-// "Voir plus" only stays when a closed summary is longer than its three lines.
-export function trimMore(container) {
+// "Voir plus" only stays when a closed summary is longer than its two lines. With keepSpace,
+// a useless button is hidden rather than removed, so the layout keeps its height.
+export function trimMore(container, keepSpace = false) {
   for (const more of container.querySelectorAll('[data-more]')) {
     const text = more.previousElementSibling;
-    if (!text.classList.contains('open') && text.scrollHeight <= text.clientHeight) more.remove();
+    if (text.classList.contains('open') || text.scrollHeight > text.clientHeight) continue;
+    if (keepSpace) more.classList.add('concealed');
+    else more.remove();
   }
 }

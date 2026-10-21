@@ -46,9 +46,8 @@ function node(book) {
 // summary is undefined while it loads, '' when there is none. The cover sits on the left,
 // the text and the summary on the right, and the read check on the card's bottom edge.
 function card(book, summary, summaryOpen, popped) {
-  let text = '';
-  if (summary === undefined) text = '<p class="summary loading"></p>';
-  else if (summary) text = summaryBlock(summary, summaryOpen);
+  // A summary that failed to load still keeps its room, so the card never changes height.
+  const text = summaryBlock(summary === '' ? undefined : summary, summaryOpen);
   return `
     <div class="book-card">
       ${book.cover_url ? `<img class="poster" src="${esc(book.cover_url)}" alt="">` : '<div class="poster"></div>'}
@@ -133,7 +132,7 @@ export async function renderBooks(main) {
         }).join('')}
       </div>`);
     popped = false;
-    trimMore(main);
+    trimMore(main, true);
   }
 
   async function grow() {
@@ -162,19 +161,15 @@ export async function renderBooks(main) {
     draw();
   }
 
-  // The card opens before its summary arrives: a placeholder keeps the card's height until
-  // then. A failure just removes the placeholder.
+  // The card opens before its summary arrives, with a placeholder of the same size (summaryBlock).
   async function loadSummary(id) {
     const summary = await api(`/books/${id}/summary`).then((data) => data.summary, () => '');
     summaries.set(id, summary);
     const slot = onPage() && openId === id && main.querySelector('.summary.loading');
-    if (!slot) return;
-    if (summary) {
-      slot.outerHTML = summaryBlock(summary, false);
-      trimMore(main);
-    } else {
-      slot.remove();
-    }
+    if (!slot || !summary) return;
+    slot.nextElementSibling.remove();
+    slot.outerHTML = summaryBlock(summary, false);
+    trimMore(main, true);
   }
 
   async function open(id) {
