@@ -95,7 +95,6 @@ async function renderHome(category) {
   const inTab = shows
     .filter((show) => show.category === category.key)
     .sort((a, b) => b.minutes - a.minutes || a.name.localeCompare(b.name, 'fr'));
-  const count = (key) => shows.filter((show) => show.category === key).length;
   const seen = number(shows.reduce((sum, show) => sum + show.seen, 0));
   setAccent(category.key);
   patch(main, `
@@ -110,7 +109,7 @@ async function renderHome(category) {
       <span class="indicator"></span>
       ${CATEGORIES.map(({ key, label, icon: path }) => `
         <a class="${key}" href="#/tab/${key}" aria-label="${label}" title="${label}" ${key === category.key ? 'aria-current="page"' : ''}>
-          ${icon(path)}<span>${count(key)}</span>
+          ${icon(path)}
         </a>`).join('')}
     </nav>
     <div class="tab-list">

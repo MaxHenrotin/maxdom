@@ -290,25 +290,22 @@ h1 { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 800; letter-spac
 
 .categories a {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
+  display: grid;
+  place-items: center;
   height: 56px;
   border-radius: 17px;
   color: var(--category);
-  font-size: 12px;
-  font-weight: 700;
-  text-decoration: none;
   transition: color 250ms ease;
 }
+
+.categories .icon { width: 28px; height: 28px; stroke-width: 2; }
 
 .categories a[aria-current="page"] { color: var(--on-accent); }
 
 .tab-title { display: flex; align-items: baseline; justify-content: space-between; margin: 24px 4px 12px; font-size: 20px; font-weight: 800; }
 
-.tab-title span { color: var(--muted); font-size: 14px; font-weight: 600; }
+/* The count of the selected category, in its colour (the home page's accent). */
+.tab-title span { color: var(--accent-text); font-size: 18px; font-weight: 800; }
 
 .shows { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; list-style: none; }
 
