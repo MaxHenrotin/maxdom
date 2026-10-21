@@ -1,4 +1,4 @@
-import { ICONS, api, esc, frenchDate, icon, localDate, number, setAccent } from './lib.js';
+import { ICONS, api, esc, frenchDate, icon, localDate, number, patch, setAccent } from './lib.js';
 
 // Column order of the tree. Their colours are --series-0 to --series-6 in style.css.
 const SERIES = [
@@ -53,7 +53,7 @@ function card(book, summary, popped) {
     <div class="book-card">
       <div class="book-side">
         ${book.cover_url ? `<img class="poster" src="${esc(book.cover_url)}" alt="">` : '<div class="poster"></div>'}
-        <button class="check ${popped ? 'pop' : ''}" data-read aria-pressed="${Boolean(book.read_at)}" aria-label="Lu" ${book.released ? '' : 'disabled'}>${icon(ICONS.check)}</button>
+        <button class="check${popped ? ' pop' : ''}" data-read aria-pressed="${Boolean(book.read_at)}" aria-label="Lu" ${book.released ? '' : 'disabled'}>${icon(ICONS.check)}</button>
       </div>
       <div class="book-info">
         <span class="chip">${esc(book.series)} · Tome ${book.volume}</span>
@@ -98,7 +98,7 @@ export async function renderBooks(main) {
   const summaries = new Map();
   let openId = null;
   let busy = false;
-  // The read check bounces once when a volume is ticked.
+  // The read check just ticked keeps its bounce through the redraw that follows.
   let popped = false;
 
   const openRow = () => main.querySelector('.book-row.open');
@@ -114,7 +114,7 @@ export async function renderBooks(main) {
     const open = books.find((book) => book.id === openId);
     let year = null;
     setAccent(open ? `series-${series(open)}` : '');
-    main.innerHTML = `
+    patch(main, `
       <header class="page-header">
         <div>
           <h1>Aquilon</h1>
@@ -135,7 +135,7 @@ export async function renderBooks(main) {
               ${card(book, summaries.get(book.id), popped)}
             </div>`;
         }).join('')}
-      </div>`;
+      </div>`);
     popped = false;
     trimMore(main);
   }
@@ -192,10 +192,11 @@ export async function renderBooks(main) {
   async function toggleRead(button) {
     const book = books.find(({ id }) => id === openId);
     button.setAttribute('aria-pressed', !book.read_at);
+    button.classList.toggle('pop', !book.read_at);
+    popped = !book.read_at;
     try {
       await api('/books/read', { method: 'POST', body: { bookIds: [book.id], read: !book.read_at } });
       books = await api('/books');
-      popped = !book.read_at;
     } catch (error) {
       alert(`Erreur : ${error.message}`);
     }

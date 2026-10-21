@@ -32,3 +32,31 @@ export const ICONS = {
   download: 'M9 3v8M5.5 7.5L9 11l3.5-3.5M4 14.5h10',
   logout: 'M7 4H4.5v10H7M10 6l3 3-3 3M13 9H7',
 };
+
+// Applies new markup to a container by changing only what differs, so the elements that stay
+// keep their running transitions and animations (a ticked check, the category indicator).
+export function patch(container, html) {
+  const next = document.createElement(container.tagName);
+  next.innerHTML = html;
+  update(container, next);
+}
+
+function update(current, next) {
+  const nodes = [...current.childNodes];
+  const others = [...next.childNodes];
+  if (nodes.length !== others.length) {
+    current.replaceChildren(...others);
+    return;
+  }
+  nodes.forEach((node, i) => {
+    const other = others[i];
+    if (node.isEqualNode(other)) return;
+    if (node.nodeType !== Node.ELEMENT_NODE || node.nodeName !== other.nodeName) {
+      node.replaceWith(other);
+      return;
+    }
+    for (const { name } of [...node.attributes]) if (!other.hasAttribute(name)) node.removeAttribute(name);
+    for (const { name, value } of [...other.attributes]) if (node.getAttribute(name) !== value) node.setAttribute(name, value);
+    update(node, other);
+  });
+}

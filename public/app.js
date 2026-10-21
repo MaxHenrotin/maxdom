@@ -1,5 +1,5 @@
 import { renderBooks } from './books.js';
-import { ICONS, api, esc, frenchDate, icon, localDate, number, setAccent } from './lib.js';
+import { ICONS, api, esc, frenchDate, icon, localDate, number, patch, setAccent } from './lib.js';
 
 const CATEGORIES = [
   {
@@ -88,8 +88,8 @@ const countdown = (show) => (show.next_airstamp
 
 const minutes = (show) => `${number(show.minutes)} / ${number(show.aired_minutes)} min`;
 
-// Switching category keeps the header and the category bar on screen and only replaces the
-// list, so the bar's indicator can slide and the colours can fade to the new category.
+// Switching category patches the page: the header and the category bar stay, so the bar's
+// indicator slides and the colours fade to the new category.
 async function renderHome(category) {
   const shows = await api('/shows');
   const inTab = shows
@@ -97,35 +97,8 @@ async function renderHome(category) {
     .sort((a, b) => b.minutes - a.minutes || a.name.localeCompare(b.name, 'fr'));
   const count = (key) => shows.filter((show) => show.category === key).length;
   const seen = number(shows.reduce((sum, show) => sum + show.seen, 0));
-  const list = `
-    <h2 class="tab-title">${category.label} <span>${inTab.length} ${inTab.length < 2 ? 'série' : 'séries'}</span></h2>
-    ${inTab.length === 0 ? `<p class="empty card">${category.empty}</p>` : `
-      <ul class="shows ${category.key}">
-        ${inTab.map((show) => `
-          <li><a class="card show-row" href="#/show/${show.id}">
-            ${poster(show.image_url)}
-            <div class="show-info">
-              <div class="show-name">${esc(show.name)}</div>
-              <div class="progress-text">${show.seen} / ${show.aired} épisodes<br>${minutes(show)}</div>
-              ${category.key === 'waiting' ? countdown(show) : ''}
-            </div>
-            ${ring(percent(show), 60, 5)}
-          </a></li>`).join('')}
-      </ul>`}`;
   setAccent(category.key);
-  const bar = main.querySelector('.categories');
-  if (bar) {
-    bar.style.setProperty('--index', CATEGORIES.indexOf(category));
-    for (const link of bar.querySelectorAll('a')) {
-      link.querySelector('span').textContent = count(link.className);
-      if (link.className === category.key) link.setAttribute('aria-current', 'page');
-      else link.removeAttribute('aria-current');
-    }
-    main.querySelector('.recap strong').textContent = seen;
-    main.querySelector('.tab-list').innerHTML = list;
-    return;
-  }
-  main.innerHTML = `
+  patch(main, `
     <header class="page-header">
       <div>
         <h1>Séries</h1>
@@ -140,7 +113,22 @@ async function renderHome(category) {
           ${icon(path)}<span>${count(key)}</span>
         </a>`).join('')}
     </nav>
-    <div class="tab-list">${list}</div>`;
+    <div class="tab-list">
+      <h2 class="tab-title">${category.label} <span>${inTab.length} ${inTab.length < 2 ? 'série' : 'séries'}</span></h2>
+      ${inTab.length === 0 ? `<p class="empty card">${category.empty}</p>` : `
+        <ul class="shows ${category.key}">
+          ${inTab.map((show) => `
+            <li><a class="card show-row" href="#/show/${show.id}">
+              ${poster(show.image_url)}
+              <div class="show-info">
+                <div class="show-name">${esc(show.name)}</div>
+                <div class="progress-text">${show.seen} / ${show.aired} épisodes<br>${minutes(show)}</div>
+                ${category.key === 'waiting' ? countdown(show) : ''}
+              </div>
+              ${ring(percent(show), 66, 6)}
+            </a></li>`).join('')}
+        </ul>`}
+    </div>`);
 }
 
 function episodeDetails(episode, info) {
@@ -163,7 +151,7 @@ function episodeRow(episode, aired, info, popped) {
   if (episode.airstamp) date = aired ? localDate(episode.airstamp) : `Diffusion le ${localDate(episode.airstamp)}`;
   return `
     <li class="episode ${aired ? '' : 'unaired'}">
-      <button class="check ${popped ? 'pop' : ''}" data-episode="${episode.id}" aria-pressed="${episode.watched}" aria-label="Vu" ${aired ? '' : 'disabled'}>${icon(ICONS.check)}</button>
+      <button class="check${popped ? ' pop' : ''}" data-episode="${episode.id}" aria-pressed="${episode.watched}" aria-label="Vu" ${aired ? '' : 'disabled'}>${icon(ICONS.check)}</button>
       <button class="episode-main" data-details="${episode.id}" aria-expanded="${Boolean(info)}">
         <span class="episode-number">${episode.number}</span>
         <span class="episode-text">
@@ -185,7 +173,7 @@ async function renderShow(id) {
   const episodeInfo = new Map();
   const openEpisodes = new Set();
   let summaryOpen = false;
-  // The episode just ticked bounces once, on the next draw.
+  // The episode just ticked keeps its bounce through the redraw that follows.
   let popped = null;
 
   function draw(openSeasons) {
@@ -193,7 +181,7 @@ async function renderShow(id) {
     const seasons = Map.groupBy(show.episodes, (episode) => episode.season);
     const category = CATEGORIES.find(({ key }) => key === show.category);
     const status = STATUS[show.status] ?? show.status;
-    main.innerHTML = `
+    patch(main, `
       ${backLink}
       <section class="card show-header ${show.category}">
         ${poster(show.image_url)}
@@ -201,7 +189,7 @@ async function renderShow(id) {
           <h1>${esc(show.name)}</h1>
           <span class="chip">${category.label}${status ? ` · ${esc(status)}` : ''}</span>
           <div class="show-progress">
-            ${ring(percent(show), 76, 7)}
+            ${ring(percent(show), 84, 8)}
             <p><strong>${show.seen} / ${show.aired}</strong><br>épisodes<br>${minutes(show)}</p>
           </div>
         </div>
@@ -221,7 +209,7 @@ async function renderShow(id) {
           <ul class="episodes">
             ${episodes.map((ep) => episodeRow(ep, isAired(ep), openEpisodes.has(ep.id) && episodeInfo.get(ep.id), ep.id === popped)).join('')}
           </ul>
-        </details>`).join('')}`;
+        </details>`).join('')}`);
     popped = null;
   }
 
@@ -235,7 +223,8 @@ async function renderShow(id) {
       const episode = show.episodes.find((ep) => ep.id === Number(target.dataset.episode));
       // Ticked right away; the redraw below, or the one after an error, sets the real state.
       target.setAttribute('aria-pressed', !episode.watched);
-      if (!episode.watched) popped = episode.id;
+      target.classList.toggle('pop', !episode.watched);
+      popped = episode.watched ? null : episode.id;
       await setWatched([episode], !episode.watched);
     } else if (target.dataset.details) {
       const episodeId = Number(target.dataset.details);

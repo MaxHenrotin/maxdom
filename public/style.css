@@ -115,7 +115,7 @@ footer { padding: 28px 16px calc(120px + env(safe-area-inset-bottom)); color: va
 .muted { margin: 0; color: var(--muted); font-size: 13px; }
 
 /* Colour changes fade, a ticked check bounces, and a tapped Aquilon circle sinks a little. */
-@keyframes pop { 0% { transform: scale(0.7); } 55% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@keyframes pop { 50% { transform: scale(1.12); } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before { animation: none !important; transition: none !important; }
@@ -282,7 +282,7 @@ h1 { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 800; letter-spac
 
 .ring-fill { fill: none; stroke: var(--category); stroke-linecap: round; }
 
-.ring text { fill: var(--ink); font-size: 12px; font-weight: 800; text-anchor: middle; }
+.ring text { fill: var(--ink); font-size: 13px; font-weight: 800; text-anchor: middle; }
 
 /* Show page */
 
@@ -300,7 +300,7 @@ h1 { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 800; letter-spac
 
 .show-progress strong { color: var(--ink); font-size: 15px; }
 
-.show-header .ring text { font-size: 15px; }
+.show-header .ring text { font-size: 16px; }
 
 .show-summary {
   display: block;
@@ -375,7 +375,7 @@ summary .button { margin-left: auto; }
 
 .check[aria-pressed="true"] .icon { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
 
-.check.pop .icon { animation: pop 320ms ease-out; }
+.check.pop .icon { animation: pop 240ms ease-out; }
 
 .check:disabled { opacity: 0.45; cursor: default; }
 
@@ -478,10 +478,10 @@ summary .button { margin-left: auto; }
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
-  transition: transform 180ms ease;
+  transition: transform 120ms ease-out;
 }
 
-.node:active { transform: scale(0.92); }
+.node:active { transform: scale(0.8); }
 
 .node.read { background: var(--colour); color: var(--on-colour); }
 
