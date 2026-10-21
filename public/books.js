@@ -45,7 +45,7 @@ function node(book) {
 
 // summary is undefined while it loads, '' when there is none. The cover and the read
 // check sit on the left; the text, then the summary, on the right.
-function card(book, summary) {
+function card(book, summary, popped) {
   let text = '';
   if (summary === undefined) text = '<p class="book-summary loading"></p>';
   else if (summary) text = `<p class="book-summary">${esc(summary)}</p><button class="more" data-more>Voir plus</button>`;
@@ -53,7 +53,7 @@ function card(book, summary) {
     <div class="book-card">
       <div class="book-side">
         ${book.cover_url ? `<img class="poster" src="${esc(book.cover_url)}" alt="">` : '<div class="poster"></div>'}
-        <button class="check" data-read aria-pressed="${Boolean(book.read_at)}" aria-label="Lu" ${book.released ? '' : 'disabled'}>${icon(ICONS.check)}</button>
+        <button class="check ${popped ? 'pop' : ''}" data-read aria-pressed="${Boolean(book.read_at)}" aria-label="Lu" ${book.released ? '' : 'disabled'}>${icon(ICONS.check)}</button>
       </div>
       <div class="book-info">
         <span class="chip">${esc(book.series)} · Tome ${book.volume}</span>
@@ -98,6 +98,8 @@ export async function renderBooks(main) {
   const summaries = new Map();
   let openId = null;
   let busy = false;
+  // The read check bounces once when a volume is ticked.
+  let popped = false;
 
   const openRow = () => main.querySelector('.book-row.open');
   // render() replaces main.onclick when another page opens; a late redraw must not land on it.
@@ -130,10 +132,11 @@ export async function renderBooks(main) {
             <div class="book-row open ${growing ? 'growing hidden' : 'settled'}" style="${at(series(book))}">
               ${label}${branches(span, row)}
               <div class="shell"></div>
-              ${card(book, summaries.get(book.id))}
+              ${card(book, summaries.get(book.id), popped)}
             </div>`;
         }).join('')}
       </div>`;
+    popped = false;
     trimMore(main);
   }
 
@@ -192,6 +195,7 @@ export async function renderBooks(main) {
     try {
       await api('/books/read', { method: 'POST', body: { bookIds: [book.id], read: !book.read_at } });
       books = await api('/books');
+      popped = !book.read_at;
     } catch (error) {
       alert(`Erreur : ${error.message}`);
     }

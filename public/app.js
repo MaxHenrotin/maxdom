@@ -88,6 +88,8 @@ const countdown = (show) => (show.next_airstamp
 
 const minutes = (show) => `${number(show.minutes)} / ${number(show.aired_minutes)} min`;
 
+// Switching category keeps the header and the category bar on screen and only replaces the
+// list, so the bar's indicator can slide and the colours can fade to the new category.
 async function renderHome(category) {
   const shows = await api('/shows');
   const inTab = shows
@@ -95,21 +97,7 @@ async function renderHome(category) {
     .sort((a, b) => b.minutes - a.minutes || a.name.localeCompare(b.name, 'fr'));
   const count = (key) => shows.filter((show) => show.category === key).length;
   const seen = number(shows.reduce((sum, show) => sum + show.seen, 0));
-  setAccent(category.key);
-  main.innerHTML = `
-    <header class="page-header">
-      <div>
-        <h1>Séries</h1>
-        <p class="recap"><strong>${seen}</strong> épisodes vus</p>
-      </div>
-      <a class="fab" href="#/add" aria-label="Ajouter une série">${icon(ICONS.plus)}</a>
-    </header>
-    <nav class="categories card" aria-label="Catégories">
-      ${CATEGORIES.map(({ key, label, icon: path }) => `
-        <a class="${key}" href="#/tab/${key}" aria-label="${label}" title="${label}" ${key === category.key ? 'aria-current="page"' : ''}>
-          ${icon(path)}<span>${count(key)}</span>
-        </a>`).join('')}
-    </nav>
+  const list = `
     <h2 class="tab-title">${category.label} <span>${inTab.length} ${inTab.length < 2 ? 'série' : 'séries'}</span></h2>
     ${inTab.length === 0 ? `<p class="empty card">${category.empty}</p>` : `
       <ul class="shows ${category.key}">
@@ -124,6 +112,35 @@ async function renderHome(category) {
             ${ring(percent(show), 60, 5)}
           </a></li>`).join('')}
       </ul>`}`;
+  setAccent(category.key);
+  const bar = main.querySelector('.categories');
+  if (bar) {
+    bar.style.setProperty('--index', CATEGORIES.indexOf(category));
+    for (const link of bar.querySelectorAll('a')) {
+      link.querySelector('span').textContent = count(link.className);
+      if (link.className === category.key) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    }
+    main.querySelector('.recap strong').textContent = seen;
+    main.querySelector('.tab-list').innerHTML = list;
+    return;
+  }
+  main.innerHTML = `
+    <header class="page-header">
+      <div>
+        <h1>Séries</h1>
+        <p class="recap"><strong>${seen}</strong> épisodes vus</p>
+      </div>
+      <a class="fab" href="#/add" aria-label="Ajouter une série">${icon(ICONS.plus)}</a>
+    </header>
+    <nav class="categories card" aria-label="Catégories" style="--index: ${CATEGORIES.indexOf(category)}">
+      <span class="indicator"></span>
+      ${CATEGORIES.map(({ key, label, icon: path }) => `
+        <a class="${key}" href="#/tab/${key}" aria-label="${label}" title="${label}" ${key === category.key ? 'aria-current="page"' : ''}>
+          ${icon(path)}<span>${count(key)}</span>
+        </a>`).join('')}
+    </nav>
+    <div class="tab-list">${list}</div>`;
 }
 
 function episodeDetails(episode, info) {
@@ -141,12 +158,12 @@ function episodeDetails(episode, info) {
     </div>`;
 }
 
-function episodeRow(episode, aired, info) {
+function episodeRow(episode, aired, info, popped) {
   let date = 'Date inconnue';
   if (episode.airstamp) date = aired ? localDate(episode.airstamp) : `Diffusion le ${localDate(episode.airstamp)}`;
   return `
     <li class="episode ${aired ? '' : 'unaired'}">
-      <button class="check" data-episode="${episode.id}" aria-pressed="${episode.watched}" aria-label="Vu" ${aired ? '' : 'disabled'}>${icon(ICONS.check)}</button>
+      <button class="check ${popped ? 'pop' : ''}" data-episode="${episode.id}" aria-pressed="${episode.watched}" aria-label="Vu" ${aired ? '' : 'disabled'}>${icon(ICONS.check)}</button>
       <button class="episode-main" data-details="${episode.id}" aria-expanded="${Boolean(info)}">
         <span class="episode-number">${episode.number}</span>
         <span class="episode-text">
@@ -168,6 +185,8 @@ async function renderShow(id) {
   const episodeInfo = new Map();
   const openEpisodes = new Set();
   let summaryOpen = false;
+  // The episode just ticked bounces once, on the next draw.
+  let popped = null;
 
   function draw(openSeasons) {
     setAccent(show.category);
@@ -200,9 +219,10 @@ async function renderShow(id) {
             ${toTick(episodes).length > 0 ? `<button class="button small" data-season-all="${season}">Tout marquer vu</button>` : ''}
           </summary>
           <ul class="episodes">
-            ${episodes.map((ep) => episodeRow(ep, isAired(ep), openEpisodes.has(ep.id) && episodeInfo.get(ep.id))).join('')}
+            ${episodes.map((ep) => episodeRow(ep, isAired(ep), openEpisodes.has(ep.id) && episodeInfo.get(ep.id), ep.id === popped)).join('')}
           </ul>
         </details>`).join('')}`;
+    popped = null;
   }
 
   const setWatched = (episodes, watched) =>
@@ -215,6 +235,7 @@ async function renderShow(id) {
       const episode = show.episodes.find((ep) => ep.id === Number(target.dataset.episode));
       // Ticked right away; the redraw below, or the one after an error, sets the real state.
       target.setAttribute('aria-pressed', !episode.watched);
+      if (!episode.watched) popped = episode.id;
       await setWatched([episode], !episode.watched);
     } else if (target.dataset.details) {
       const episodeId = Number(target.dataset.details);

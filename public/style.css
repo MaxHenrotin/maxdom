@@ -78,11 +78,11 @@
 [data-accent="series-5"] { --accent: var(--series-5); --on-accent: var(--on-series-5); }
 [data-accent="series-6"] { --accent: var(--series-6); --on-accent: var(--on-series-6); }
 
-.in_progress { --category: var(--in-progress); --on-category: var(--on-yellow); }
-.waiting { --category: var(--waiting); --on-category: var(--on-colour); }
-.ended { --category: var(--ended); --on-category: var(--on-colour); }
-.stopped { --category: var(--stopped); --on-category: var(--on-colour); }
-.watch_later { --category: var(--watch-later); --on-category: var(--on-colour); }
+.in_progress { --category: var(--in-progress); }
+.waiting { --category: var(--waiting); }
+.ended { --category: var(--ended); }
+.stopped { --category: var(--stopped); }
+.watch_later { --category: var(--watch-later); }
 
 * { box-sizing: border-box; }
 
@@ -114,6 +114,13 @@ footer { padding: 28px 16px calc(120px + env(safe-area-inset-bottom)); color: va
 
 .muted { margin: 0; color: var(--muted); font-size: 13px; }
 
+/* Colour changes fade, a ticked check bounces, and a tapped Aquilon circle sinks a little. */
+@keyframes pop { 0% { transform: scale(0.7); } 55% { transform: scale(1.18); } 100% { transform: scale(1); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before { animation: none !important; transition: none !important; }
+}
+
 .tabbar {
   position: fixed;
   z-index: 10;
@@ -143,6 +150,7 @@ footer { padding: 28px 16px calc(120px + env(safe-area-inset-bottom)); color: va
   font-size: 14px;
   font-weight: 700;
   text-decoration: none;
+  transition: background-color 250ms ease, color 250ms ease;
 }
 
 .tabbar a[aria-current="page"] { background: var(--accent-soft); color: var(--accent-text); }
@@ -164,6 +172,7 @@ h1 { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 800; letter-spac
   border-radius: 24px;
   background: var(--accent);
   color: var(--on-accent);
+  transition: background-color 250ms ease, color 250ms ease;
 }
 
 .fab .icon { width: 20px; height: 20px; stroke-width: 2.2; }
@@ -189,6 +198,7 @@ h1 { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 800; letter-spac
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
+  transition: background-color 250ms ease, color 250ms ease;
 }
 
 .button.small { height: 36px; padding: 0 12px; border-radius: 12px; font-size: 13px; }
@@ -208,15 +218,32 @@ h1 { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 800; letter-spac
 
 .chip.plain { padding-left: 0; background: none; }
 
+.show-row .chip { margin-top: 4px; }
+
 .empty { margin: 0; padding: 24px 20px; color: var(--muted); text-align: center; }
 
 .empty a { color: var(--accent-text); font-weight: 700; }
 
 /* Home */
 
-.categories { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-top: 22px; padding: 6px; }
+.categories { position: relative; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-top: 22px; padding: 6px; }
+
+/* The selected category's background slides from one cell to the other: a cell is a fifth
+   of the bar once its 6px padding and four 4px gaps are taken out. */
+.indicator {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 6px;
+  width: calc((100% - 28px) / 5);
+  border-radius: 17px;
+  background: var(--accent);
+  transform: translateX(calc(var(--index) * (100% + 4px)));
+  transition: transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1), background-color 250ms ease;
+}
 
 .categories a {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -228,9 +255,10 @@ h1 { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 800; letter-spac
   font-size: 12px;
   font-weight: 700;
   text-decoration: none;
+  transition: color 250ms ease;
 }
 
-.categories a[aria-current="page"] { background: var(--category); color: var(--on-category); }
+.categories a[aria-current="page"] { color: var(--on-accent); }
 
 .tab-title { display: flex; align-items: baseline; justify-content: space-between; margin: 24px 4px 12px; font-size: 20px; font-weight: 800; }
 
@@ -315,11 +343,12 @@ summary::-webkit-details-marker { display: none; }
   border-right: 2px solid var(--muted);
   border-bottom: 2px solid var(--muted);
   transform: rotate(-45deg);
+  transition: transform 200ms ease;
 }
 
 details[open] .season-name::before { transform: rotate(45deg); }
 
-.season-count { padding: 2px 8px; border-radius: 9px; color: var(--muted); font-size: 13px; }
+.season-count { padding: 2px 8px; border-radius: 9px; color: var(--muted); font-size: 13px; transition: background-color 250ms ease, color 250ms ease; }
 
 .season-count.done { background: var(--accent-soft); color: var(--accent-text); font-weight: 700; }
 
@@ -341,9 +370,12 @@ summary .button { margin-left: auto; }
   border-radius: 50%;
   color: transparent;
   stroke-width: 2.4;
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
 }
 
 .check[aria-pressed="true"] .icon { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
+
+.check.pop .icon { animation: pop 320ms ease-out; }
 
 .check:disabled { opacity: 0.45; cursor: default; }
 
@@ -446,7 +478,10 @@ summary .button { margin-left: auto; }
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
+  transition: transform 180ms ease;
 }
+
+.node:active { transform: scale(0.92); }
 
 .node.read { background: var(--colour); color: var(--on-colour); }
 
