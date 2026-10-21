@@ -81,6 +81,11 @@ function daysUntil(airstamp) {
   return Math.round((day(new Date(airstamp)) - day(new Date())) / 86_400_000);
 }
 
+// A known date is highlighted; an unknown one stays plain text.
+const countdown = (show) => (show.next_airstamp
+  ? `<span class="chip">Prochain : J-${daysUntil(show.next_airstamp)}</span>`
+  : '<span class="chip plain">Prochain : J-?</span>');
+
 const minutes = (show) => `${number(show.minutes)} / ${number(show.aired_minutes)} min`;
 
 async function renderHome(category) {
@@ -114,9 +119,9 @@ async function renderHome(category) {
             <div class="show-info">
               <div class="show-name">${esc(show.name)}</div>
               <div class="progress-text">${show.seen} / ${show.aired} épisodes<br>${minutes(show)}</div>
-              ${category.key === 'waiting' ? `<span class="chip">Prochain : J-${show.next_airstamp ? daysUntil(show.next_airstamp) : '?'}</span>` : ''}
+              ${category.key === 'waiting' ? countdown(show) : ''}
             </div>
-            ${ring(percent(show), 52, 4)}
+            ${ring(percent(show), 60, 5)}
           </a></li>`).join('')}
       </ul>`}`;
 }
@@ -177,7 +182,7 @@ async function renderShow(id) {
           <h1>${esc(show.name)}</h1>
           <span class="chip">${category.label}${status ? ` · ${esc(status)}` : ''}</span>
           <div class="show-progress">
-            ${ring(percent(show), 68, 6)}
+            ${ring(percent(show), 76, 7)}
             <p><strong>${show.seen} / ${show.aired}</strong><br>épisodes<br>${minutes(show)}</p>
           </div>
         </div>

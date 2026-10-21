@@ -43,34 +43,32 @@ function node(book) {
   return `<button class="node ${state}" data-book="${esc(book.id)}" style="${at(series(book))}" aria-label="${esc(label)}">${book.read_at ? icon(ICONS.check) : book.volume}</button>`;
 }
 
-// summary is undefined while it loads, '' when there is none.
-function card(book, books, summary) {
-  const { short, name } = SERIES[series(book)];
-  const sameSeries = books.filter((other) => other.series === book.series).sort((a, b) => a.volume - b.volume);
-  const index = sameSeries.indexOf(book);
-  const link = (other, text) => (other ? `<button class="pill" data-book="${esc(other.id)}">${text}</button>` : '<span></span>');
-  let label = `Paraît le ${frenchDate(book.published)}`;
-  if (book.read_at) label = `Lu le ${localDate(book.read_at)}`;
-  else if (book.released) label = 'Marquer comme lu';
+// summary is undefined while it loads, '' when there is none. The cover and the read
+// check sit on the left; the text, then the summary, on the right.
+function card(book, summary) {
+  let text = '';
+  if (summary === undefined) text = '<p class="book-summary loading"></p>';
+  else if (summary) text = `<p class="book-summary">${esc(summary)}</p><button class="more" data-more>Voir plus</button>`;
   return `
     <div class="book-card">
-      <div class="book-head">
+      <div class="book-side">
         ${book.cover_url ? `<img class="poster" src="${esc(book.cover_url)}" alt="">` : '<div class="poster"></div>'}
-        <div>
-          <span class="chip">${esc(name)} · Tome ${book.volume}</span>
-          <div class="book-title">${esc(book.title)}</div>
-          <div class="muted">${book.released ? 'Paru' : 'Paraît'} le ${frenchDate(book.published)}</div>
-        </div>
+        <button class="check" data-read aria-pressed="${Boolean(book.read_at)}" aria-label="Lu" ${book.released ? '' : 'disabled'}>${icon(ICONS.check)}</button>
       </div>
-      <button class="read-button" data-read aria-pressed="${Boolean(book.read_at)}" ${book.released ? '' : 'disabled'}>
-        ${book.read_at ? icon(ICONS.check) : ''}${label}
-      </button>
-      ${summary === undefined ? '<p class="show-summary loading"></p>' : summary ? `<button class="show-summary" data-summary><span>${esc(summary)}</span></button>` : ''}
-      <div class="book-links">
-        ${link(sameSeries[index - 1], `‹ ${short} ${sameSeries[index - 1]?.volume}`)}
-        ${link(sameSeries[index + 1], `${short} ${sameSeries[index + 1]?.volume} ›`)}
+      <div class="book-info">
+        <span class="chip">${esc(book.series)} · Tome ${book.volume}</span>
+        <div class="book-title">${esc(book.title)}</div>
+        <p class="muted">${book.released ? 'Paru' : 'Paraît'} le ${frenchDate(book.published)}</p>
+        ${book.read_at ? `<p class="muted">Lu le ${localDate(book.read_at)}</p>` : ''}
+        ${text}
       </div>
     </div>`;
+}
+
+// "Voir plus" only stays when the summary is longer than the lines it is cut to.
+function trimMore(main) {
+  const text = main.querySelector('.book-summary:not(.loading)');
+  if (text && text.scrollHeight <= text.clientHeight) main.querySelector('[data-more]').remove();
 }
 
 export async function renderBooks(main) {
@@ -103,21 +101,23 @@ export async function renderBooks(main) {
           const bookYear = book.published.slice(0, 4);
           const label = bookYear === year ? '' : `<span class="year">${bookYear}</span>`;
           year = bookYear;
-          const content = book === open ? card(book, books, summaries.get(book.id)) : node(book);
+          const content = book === open ? card(book, summaries.get(book.id)) : node(book);
           return `<div class="book-row ${book === open ? 'open' : ''}" style="${at(series(book))}">${label}${branches(span, row)}${content}</div>`;
         }).join('')}
       </div>`;
+    trimMore(main);
   }
 
-  // The card opens before its summary arrives: the summary is cut to four lines, so a
-  // four-line placeholder keeps the card's height. A failure just removes the placeholder.
+  // The card opens before its summary arrives: a placeholder keeps the card's height until
+  // then. A failure just removes the placeholder.
   async function loadSummary(id) {
     const summary = await api(`/books/${id}/summary`).then((data) => data.summary, () => '');
     summaries.set(id, summary);
-    const slot = onPage() && openId === id && main.querySelector('.book-row.open .show-summary.loading');
+    const slot = onPage() && openId === id && main.querySelector('.book-summary.loading');
     if (!slot) return;
     if (summary) {
-      slot.outerHTML = `<button class="show-summary" data-summary><span>${esc(summary)}</span></button>`;
+      slot.outerHTML = `<p class="book-summary">${esc(summary)}</p><button class="more" data-more>Voir plus</button>`;
+      trimMore(main);
     } else {
       slot.remove();
     }
@@ -145,10 +145,13 @@ export async function renderBooks(main) {
   function onClick({ target }) {
     const book = target.closest('[data-book]');
     const readButton = target.closest('[data-read]');
-    const summary = target.closest('[data-summary]');
+    const more = target.closest('[data-more]');
     if (book) open(book.dataset.book);
     else if (readButton) toggleRead(readButton);
-    else if (summary) summary.classList.toggle('open');
+    else if (more) {
+      const expanded = main.querySelector('.book-summary').classList.toggle('open');
+      more.textContent = expanded ? 'Voir moins' : 'Voir plus';
+    }
     // A tap anywhere but on the card closes it.
     else if (openId && !target.closest('.book-card, a')) open(null);
   }
