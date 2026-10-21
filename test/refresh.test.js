@@ -3,15 +3,15 @@ import { pickShowsToRefresh, refresh } from '../src/refresh.js';
 import { createD1 } from './d1.js';
 
 describe('pickShowsToRefresh', () => {
-  const myShows = [{ id: 1, tvmaze_updated: 100 }, { id: 2, tvmaze_updated: 50 }, { id: 3, tvmaze_updated: 10 }];
+  const shows = [{ id: 1, tvmaze_updated: 100 }, { id: 2, tvmaze_updated: 50 }, { id: 3, tvmaze_updated: 10 }];
   const updates = { 1: 100, 2: 60, 3: 20, 99: 500 };
 
-  it('picks my shows updated since the last fetch, oldest first', () => {
-    expect(pickShowsToRefresh(myShows, updates)).toEqual([3, 2]);
+  it('picks the shows updated since the last fetch, oldest first', () => {
+    expect(pickShowsToRefresh(shows, updates)).toEqual([3, 2]);
   });
 
   it('stops at the limit', () => {
-    expect(pickShowsToRefresh(myShows, updates, 1)).toEqual([3]);
+    expect(pickShowsToRefresh(shows, updates, 1)).toEqual([3]);
   });
 
   // Each show can take 4 fetches (3 retries on 429); with the updates call and two D1 calls

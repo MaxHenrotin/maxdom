@@ -1,10 +1,16 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 
-// In-memory stand-in for the D1 binding, with the schema built by the real migrations.
-export function createD1() {
+// An in-memory database with the schema built by the real migrations.
+export function migratedDatabase() {
   const sqlite = new DatabaseSync(':memory:');
   for (const file of readdirSync('migrations').sort()) sqlite.exec(readFileSync(`migrations/${file}`, 'utf8'));
+  return sqlite;
+}
+
+// Stand-in for the D1 binding.
+export function createD1() {
+  const sqlite = migratedDatabase();
   const statement = (sql, args = []) => ({
     bind: (...values) => statement(sql, values),
     all: async () => ({ results: sqlite.prepare(sql).all(...args) }),

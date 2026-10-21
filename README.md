@@ -37,7 +37,7 @@ To restore one into an empty database, for example on a new machine, run the fil
 npx wrangler d1 execute maxdom --local --file=data/backup-YYYY-MM-DD.sql
 ```
 
-The "Télécharger mes données" button on the Profil page is different: it only holds the logged-in account, with the shows it follows and their episodes. It is made of `INSERT OR IGNORE` statements, so it restores the same way into a Maxdom database that already has its tables and other accounts, without touching them.
+The "Télécharger mes données" button on the Profil page is different: it only holds the logged-in account, with the shows it follows, their episodes and the Aquilon volumes. It is made of `INSERT OR IGNORE` statements, so it restores the same way into a Maxdom database that already has its tables and other accounts, without touching them.
 
 `data/` is ignored by git because it holds personal data, so keep a copy of the backups somewhere else too.
 

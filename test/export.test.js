@@ -1,8 +1,6 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { DatabaseSync } from 'node:sqlite';
 import { describe, expect, it } from 'vitest';
 import worker from '../src/worker.js';
-import { createD1 } from './d1.js';
+import { createD1, migratedDatabase } from './d1.js';
 
 // The owner (user 1) follows show 7 and read elfes-t01; a@example.com (user 2) follows show 8 and read nains-t01.
 async function twoAccounts() {
@@ -19,12 +17,6 @@ async function twoAccounts() {
 }
 
 const exportAs = (db, email) => worker.fetch(new Request('http://localhost/api/export'), { DB: db, DEV_EMAIL: email });
-
-function migratedDatabase() {
-  const sqlite = new DatabaseSync(':memory:');
-  for (const file of readdirSync('migrations').sort()) sqlite.exec(readFileSync(`migrations/${file}`, 'utf8'));
-  return sqlite;
-}
 
 describe('GET /api/export', () => {
   it("leaves out the other accounts' rows", async () => {

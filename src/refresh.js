@@ -5,8 +5,8 @@ import { toEpisodeRows, toShowRow, tvmazeGet } from './tvmaze.js';
 // 4 fetches (3 retries on 429), so 10 shows plus the updates call and two D1 calls fit.
 const MAX_SHOWS_PER_RUN = 10;
 
-export function pickShowsToRefresh(myShows, updates, limit = MAX_SHOWS_PER_RUN) {
-  return myShows
+export function pickShowsToRefresh(shows, updates, limit = MAX_SHOWS_PER_RUN) {
+  return shows
     .filter((show) => updates[show.id] > show.tvmaze_updated)
     .sort((a, b) => a.tvmaze_updated - b.tvmaze_updated)
     .slice(0, limit)
