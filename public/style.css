@@ -539,23 +539,41 @@ summary .button { margin-left: auto; }
 
 .node.unreleased { border-width: 2px; border-style: dashed; background: var(--bg); color: var(--muted); opacity: 0.6; }
 
-.book-row.open { overflow: hidden; transition: height 0.45s ease; }
+/* flow-root keeps the card's bottom margin inside the row, as overflow: hidden did; clip only
+   cuts vertically, so a bump on the last column may reach past the card on the right. */
+.book-row.open { display: flow-root; overflow-x: visible; overflow-y: clip; transition: height 0.45s ease; }
 
 .book-row.growing { height: 46px; }
 
 .book-row.settled { height: auto; }
 
-/* The card's box: it starts and ends as the volume's circle (.growing) and grows to the card. */
-.shell {
+/* An open card is one shape: a rounded rectangle (.shell) with a round bump on its bottom edge,
+   under the series' column, where the read check sits. It is drawn as the union of the two:
+   the bump's outline behind the shell, then the bump's fill on top, which hides the shell's
+   edge inside the bump. The shadow follows the whole outline.
+   Opening morphs the volume's circle into that shape: both parts start as the circle
+   (.growing), then the shell grows to the card while the bump drops to the bottom edge and
+   grows, so the bump comes out of the card's bottom. Closing plays it backwards. */
+.shape { position: absolute; inset: 0; filter: drop-shadow(0 2px 4px var(--shadow)); }
+
+.shell, .bump, .bump-fill {
   position: absolute;
-  border: 2px solid color-mix(in srgb, var(--colour) 45%, transparent);
   background: var(--card);
-  box-shadow: 0 4px 14px var(--shadow);
   transition: all 0.45s ease;
 }
 
-/* The shell starts as the volume's circle, drawn like it (filled once read). */
-.growing .shell {
+.shell, .bump { border: 2px solid color-mix(in srgb, var(--colour) 45%, transparent); }
+
+.bump, .bump-fill { border-radius: 50%; }
+
+.bump { top: calc(100% - 72px); left: calc(44px + (var(--col) + 0.5) * (100% - 44px) / 7 - 32px); width: 64px; height: 64px; }
+
+.bump-fill { top: calc(100% - 70px); left: calc(44px + (var(--col) + 0.5) * (100% - 44px) / 7 - 30px); width: 60px; height: 60px; }
+
+.settled .shell { inset: 0 0 40px; border-radius: 24px; }
+
+/* The starting circle, drawn like the volume's circle in the tree (filled once read). */
+.growing .shell, .growing .bump {
   top: 7px;
   left: calc(44px + (var(--col) + 0.5) * (100% - 44px) / 7 - 16px);
   width: 32px;
@@ -564,23 +582,23 @@ summary .button { margin-left: auto; }
   border-radius: 16px;
 }
 
-.growing.read .shell { background: var(--colour); }
+.growing .bump-fill { top: 9px; left: calc(44px + (var(--col) + 0.5) * (100% - 44px) / 7 - 14px); width: 28px; height: 28px; }
 
-.settled .shell { inset: 0 0 34px; border-radius: 24px; }
+.growing.read :is(.shell, .bump, .bump-fill) { background: var(--colour); }
 
 .book-card {
   --category: var(--colour);
   position: relative;
   display: flex;
   gap: 16px;
-  margin-bottom: 34px;
+  margin-bottom: 40px;
   padding: 16px 16px 36px;
 }
 
-.book-card > * { transition: opacity 0.2s; }
+.book-card > * { transition: opacity 0.2s, transform 0.2s; }
 
-/* While the card grows or shrinks, only the read check shows: it is the volume's circle. */
-.hidden .book-card > :not(.read-toggle) { opacity: 0; }
+/* The content, the read check included, only shows once the shape is open. */
+.hidden .book-card > * { opacity: 0; }
 
 /* The cover keeps its size and place when the summary opens and the card grows. */
 .book-card > .poster { align-self: flex-start; width: 116px; border-radius: 14px; }
@@ -595,10 +613,7 @@ summary .button { margin-left: auto; }
 
 .book-info .summary { margin-top: 10px; }
 
-/* The read check sits astride the card's bottom edge, on its series' column like the circle
-   in the tree, its coloured rim meeting the border. Opening splits the circle: its top half
-   unfolds into the card (the shell) while its bottom half (.growing) drops to the edge and
-   closes back into the whole check. */
+/* The read check sits in the bump, centred on the card's bottom edge. */
 .read-toggle {
   position: absolute;
   top: calc(100% - 28px);
@@ -613,11 +628,10 @@ summary .button { margin-left: auto; }
   background: var(--card);
   color: transparent;
   cursor: pointer;
-  clip-path: inset(0);
-  transition: background-color 180ms ease, color 180ms ease, top 0.45s ease, transform 0.45s ease, clip-path 0.45s ease;
+  transition: opacity 0.2s, transform 0.2s, background-color 180ms ease, color 180ms ease;
 }
 
-.growing .read-toggle { top: -5px; transform: scale(0.5714); clip-path: inset(50% 0 0 0); }
+.hidden .read-toggle { transform: scale(0.6); }
 
 .read-toggle .icon { width: 26px; height: 26px; stroke-width: 3; }
 

@@ -73,8 +73,8 @@ const FADE_OUT_MS = 150;
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-// Room under an open card for the lower half of the read check (.book-card's margin in style.css).
-const BELOW_CARD = 34;
+// Room under an open card for its bump and the bump's shadow (.book-card's margin in style.css).
+const BELOW_CARD = 40;
 
 // Transitions need pixel sizes at both ends; once open, the card sizes itself so the summary can expand.
 function pinToCard(row) {
@@ -127,7 +127,7 @@ export async function renderBooks(main) {
           return `
             <div class="book-row open ${book.read_at ? 'read' : ''} ${growing ? 'growing hidden' : 'settled'}" style="${at(series(book))}">
               ${label}${branches(span, row)}
-              <div class="shell"></div>
+              <div class="shape"><div class="bump"></div><div class="shell"></div><div class="bump-fill"></div></div>
               ${card(book, summaries.get(book.id), summaryOpen, popped)}
             </div>`;
         }).join('')}
