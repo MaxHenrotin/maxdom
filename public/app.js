@@ -86,12 +86,21 @@ const countdown = (show) => (show.next_airstamp
   ? `<span class="chip">Prochain : J-${daysUntil(show.next_airstamp)}</span>`
   : '<span class="chip plain">Prochain : J-?</span>');
 
+// The home list reads every episode of every show (about 6,000 rows for a big list), so it is
+// fetched once per page load. A change on a show page swaps in that show's own reload instead.
+let homeShows;
+const listShows = async () => (homeShows ??= await api('/shows'));
+
+const keepInList = ({ episodes, now, ...summary }) => {
+  homeShows = homeShows?.map((entry) => (entry.id === summary.id ? summary : entry));
+};
+
 const minutes = (show) => `${number(show.minutes)} / ${number(show.aired_minutes)} min`;
 
 // Switching category patches the page: the header and the category bar stay, so the bar's
 // indicator slides and the colours fade to the new category.
 async function renderHome(category) {
-  const shows = await api('/shows');
+  const shows = await listShows();
   const inTab = shows
     .filter((show) => show.category === category.key)
     .sort((a, b) => b.minutes - a.minutes || a.name.localeCompare(b.name, 'fr'));
@@ -250,11 +259,12 @@ async function renderShow(id) {
       const lost = show.seen === 0 ? '' : ` Tes ${show.seen} épisode${show.seen > 1 ? 's' : ''} vu${show.seen > 1 ? 's' : ''} ser${show.seen > 1 ? 'ont' : 'a'} effacé${show.seen > 1 ? 's' : ''}.`;
       if (!confirm(`Supprimer définitivement « ${show.name} » ?${lost}`)) return;
       await api(`/shows/${show.id}`, { method: 'DELETE' });
+      homeShows = homeShows?.filter((entry) => entry.id !== show.id);
       location.hash = '#/';
       return;
     }
     // Reload so counts, category and watched dates come from the server.
-    if (!target.dataset.details) Object.assign(show, await api(`/shows/${show.id}`));
+    if (!target.dataset.details) keepInList(Object.assign(show, await api(`/shows/${show.id}`)));
     redraw();
   }
 
@@ -271,6 +281,8 @@ async function renderShow(id) {
     // A button inside <summary> would also toggle the season.
     event.preventDefault();
     handle(target).catch((error) => {
+      // A write may have gone through before the error, so the home list is read again.
+      homeShows = undefined;
       alert(`Erreur : ${error.message}`);
       redraw();
     });
@@ -292,7 +304,7 @@ function resultRow(show, inList) {
 }
 
 async function renderAdd() {
-  const inList = new Set((await api('/shows')).map((show) => show.id));
+  const inList = new Set((await listShows()).map((show) => show.id));
   setAccent('');
   main.innerHTML = `
     ${backLink}
@@ -322,7 +334,8 @@ async function renderAdd() {
     if (!button) return;
     button.disabled = true;
     try {
-      await api('/shows', { method: 'POST', body: { tvmazeId: Number(button.dataset.add) } });
+      const added = await api('/shows', { method: 'POST', body: { tvmazeId: Number(button.dataset.add) } });
+      homeShows?.push(added);
       location.hash = '#/tab/watch_later';
     } catch (error) {
       if (error.status === 409) {
