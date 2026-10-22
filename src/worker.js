@@ -8,6 +8,8 @@ import { refresh } from './refresh.js';
 import { toEpisodeRows, toShowRow, tvmazeGet } from './tvmaze.js';
 
 // The shows account ?2 follows. SUM over a LEFT JOIN is NULL for a show without episodes, hence the COALESCE.
+// Grouping by us.show_id follows the user_shows key order, so SQLite skips the sort that
+// GROUP BY s.id needs: D1 counts the sorted rows too, about 40% of the rows read.
 const SUMMARY_SQL = `
   SELECT s.id, s.name, s.status, s.image_url, s.premiered_year, us.stopped,
     COALESCE(SUM(w.episode_id IS NOT NULL), 0) AS seen,
@@ -28,12 +30,12 @@ function toSummary({ airedUnseen, ...row }) {
 }
 
 async function listShows(db, now, user) {
-  const { results } = await db.prepare(`${SUMMARY_SQL} GROUP BY s.id`).bind(now, user.id).all();
+  const { results } = await db.prepare(`${SUMMARY_SQL} GROUP BY us.show_id`).bind(now, user.id).all();
   return Response.json(results.map(toSummary));
 }
 
 const showSummary = (db, now, user, id) =>
-  db.prepare(`${SUMMARY_SQL} AND s.id = ?3 GROUP BY s.id`).bind(now, user.id, id).first();
+  db.prepare(`${SUMMARY_SQL} AND s.id = ?3 GROUP BY us.show_id`).bind(now, user.id, id).first();
 
 async function getShow(db, now, user, id) {
   const show = await showSummary(db, now, user, id);
@@ -124,11 +126,13 @@ export default {
 
     const email = await identify(request, env);
     if (!email) return error(401, 'not logged in');
-    // The first request from an email creates its account.
-    const user = await db
-      .prepare('INSERT INTO users (email, created_at) VALUES (?1, ?2) ON CONFLICT (email) DO UPDATE SET email = excluded.email RETURNING id, email')
-      .bind(email, now)
-      .first();
+    // The first request from an email creates its account. The lookup comes first, so the
+    // other requests cost a read instead of a write.
+    const user = (await db.prepare('SELECT id, email FROM users WHERE email = ?1').bind(email).first())
+      ?? (await db
+        .prepare('INSERT INTO users (email, created_at) VALUES (?1, ?2) ON CONFLICT (email) DO UPDATE SET email = excluded.email RETURNING id, email')
+        .bind(email, now)
+        .first());
 
     // Book ids are slugs, which the numeric :id pattern above doesn't cover.
     const summary = pathname.match(/^\/api\/books\/([a-z0-9-]+)\/summary$/);
