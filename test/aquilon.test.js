@@ -29,9 +29,7 @@ describe('parseListing', () => {
 });
 
 it('parseSummary returns the plain text of the summary', () => {
-  const summary = parseSummary(fixture('mages-t04.html'));
-  expect(summary.startsWith('Arundill a six ans quand elle est achetée par l’alchimiste')).toBe(true);
-  expect(summary).not.toMatch(/<|&#?\w+;/);
+  expect(parseSummary(fixture('mages-t04.html'))).toBe('Arundill cherche l’alchimiste qui l’a élevée. Résumé écrit pour les tests.');
   expect(parseSummary('<html></html>')).toBe('');
 });
 

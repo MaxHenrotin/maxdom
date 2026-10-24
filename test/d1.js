@@ -8,9 +8,10 @@ export function migratedDatabase() {
   return sqlite;
 }
 
-// Stand-in for the D1 binding.
+// Stand-in for the D1 binding, with user 1, the owner most tests act as.
 export function createD1() {
   const sqlite = migratedDatabase();
+  sqlite.exec("INSERT INTO users (id, email, created_at) VALUES (1, 'owner@example.com', 'x')");
   const statement = (sql, args = []) => ({
     bind: (...values) => statement(sql, values),
     all: async () => ({ results: sqlite.prepare(sql).all(...args) }),

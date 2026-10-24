@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import worker from '../src/worker.js';
 import { createD1 } from './d1.js';
 
-// User 1, created by the migration, owns the rows the fixtures insert.
-const OWNER = 'max.henrotin@gmail.com';
+// User 1, created by createD1, owns the rows the tests insert.
+const OWNER = 'owner@example.com';
 const call = (db, path, { email = OWNER, ...init } = {}) => worker.fetch(new Request(`http://localhost/api${path}`, init), { DB: db, DEV_EMAIL: email });
 const json = (body) => ({ method: 'POST', body: JSON.stringify(body) });
 

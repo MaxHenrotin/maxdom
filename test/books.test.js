@@ -80,7 +80,7 @@ describe('scheduled', () => {
 
 describe('books API', () => {
   let db;
-  const call = (path, init, email = 'max.henrotin@gmail.com') => worker.fetch(new Request(`http://localhost${path}`, init), { DB: db, DEV_EMAIL: email });
+  const call = (path, init, email = 'owner@example.com') => worker.fetch(new Request(`http://localhost${path}`, init), { DB: db, DEV_EMAIL: email });
   const get = async (path) => (await call(path)).json();
   const post = (path, body, email) => call(path, { method: 'POST', body: JSON.stringify(body) }, email);
   const readIds = async () => (await db.prepare('SELECT book_id FROM books_read ORDER BY book_id').all()).results.map((r) => r.book_id);
@@ -119,13 +119,13 @@ describe('books API', () => {
     await post('/api/books/read', { bookIds: ['e9'], read: false }, 'a@example.com');
     const read = async (email) => (await (await call('/api/books', undefined, email)).json()).filter((b) => b.read_at).map((b) => b.id);
     expect(await read('a@example.com')).toEqual(['n1']);
-    expect(await read('max.henrotin@gmail.com')).toEqual(['e9']);
+    expect(await read('owner@example.com')).toEqual(['e9']);
   });
 
   it('returns the summary of a known volume', async () => {
     const fetch = vi.fn(async () => new Response(fixture('mages-t04.html')));
     vi.stubGlobal('fetch', fetch);
-    expect((await get('/api/books/mages-t04/summary')).summary).toMatch(/^Arundill a six ans/);
+    expect((await get('/api/books/mages-t04/summary')).summary).toMatch(/^Arundill cherche/);
     expect(fetch).toHaveBeenCalledWith('https://www.monde-aquilon.com/livre/mages-t04/');
   });
 
@@ -134,10 +134,10 @@ describe('books API', () => {
     vi.stubGlobal('fetch', fetch);
     await get('/api/books/mages-t04/summary');
 
-    expect((await get('/api/books/mages-t04/summary')).summary).toMatch(/^Arundill a six ans/);
+    expect((await get('/api/books/mages-t04/summary')).summary).toMatch(/^Arundill cherche/);
     expect(fetch).toHaveBeenCalledTimes(1);
     const books = await get('/api/books');
-    expect(books.find((b) => b.id === 'mages-t04').summary).toMatch(/^Arundill a six ans/);
+    expect(books.find((b) => b.id === 'mages-t04').summary).toMatch(/^Arundill cherche/);
     expect(books.find((b) => b.id === 'n1').summary).toBeNull();
   });
 

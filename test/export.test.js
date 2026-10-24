@@ -22,13 +22,13 @@ describe('GET /api/export', () => {
   it("leaves out the other accounts' rows", async () => {
     const sql = await (await exportAs(await twoAccounts(), 'a@example.com')).text();
 
-    expect(sql).not.toMatch(/Owner Show|max\.henrotin|w1|r1/);
+    expect(sql).not.toMatch(/Owner Show|owner@|w1|r1/);
     expect(sql).toContain("Inside Bill''s Brain");
   });
 
   it('names the file after the part of the email before the @, in safe characters', async () => {
-    const res = await exportAs(createD1(), 'max.henrotin+"tv"@example.com');
-    expect(res.headers.get('content-disposition')).toMatch(/^attachment; filename="maxdom_max\.henrotin--tv-_\d{4}-\d{2}-\d{2}\.sql"$/);
+    const res = await exportAs(createD1(), 'jane.doe+"tv"@example.com');
+    expect(res.headers.get('content-disposition')).toMatch(/^attachment; filename="maxdom_jane\.doe--tv-_\d{4}-\d{2}-\d{2}\.sql"$/);
   });
 
   it('restores into another database without touching its accounts', async () => {
